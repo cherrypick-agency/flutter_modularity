@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  modularity_contracts: ^0.0.1
   modularity_core: ^0.0.1
 
 dev_dependencies:
