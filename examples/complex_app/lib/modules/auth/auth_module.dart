@@ -19,7 +19,12 @@ class AuthService {
 class AuthModule extends Module {
   @override
   void binds(Binder i) {
+    // Internal dependencies for AuthModule would go here
+  }
+
+  @override
+  void exports(Binder i) {
+    // Public dependencies exposed to importers
     i.singleton<AuthService>(() => AuthService());
   }
 }
-

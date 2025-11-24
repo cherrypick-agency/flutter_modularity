@@ -36,7 +36,49 @@ abstract class Module {
 }
 ```
 
-## **3. Dependency Injection & Scoping**
+## **3. Explicit Module Interface (Private vs Public)**
+
+Мы применяем паттерн **Explicit Module Interface**, который строго разделяет внутренние реализации и публичный контракт модуля. Это обеспечивает высокую степень инкапсуляции и предотвращает утечку деталей реализации.
+
+### **3.1. `binds(Binder i)` — Private Scope**
+Здесь регистрируются зависимости, которые нужны **только этому модулю**. Они **не видны** другим модулям, даже если те импортируют текущий.
+
+*   **Что здесь:** Реализации репозиториев (`AuthRepositoryImpl`), источники данных (`ApiService`, `LocalStorage`), мапперы, внутренние утилиты.
+*   **Принцип:** "Черный ящик". Внешний мир не должен знать, как модуль работает внутри.
+
+### **3.2. `exports(Binder i)` — Public Scope**
+Здесь регистрируются зависимости, которые модуль **предоставляет** внешнему миру. Эти зависимости попадают в публичный скоуп и становятся доступны модулям, которые добавили этот модуль в `imports`.
+
+*   **Что здесь:** Интерфейсы сервисов (`AuthService`), интерфейсы репозиториев (если они публичные), UseCases.
+*   **Принцип:** "Контракт". Это единственное, что видят другие модули.
+
+### **Пример (Google Spec Style):**
+
+```dart
+class AuthModule extends Module {
+  @override
+  void binds(Binder i) {
+    // --- PRIVATE: Никто снаружи это не увидит ---
+    // 1. Data Sources
+    i.singleton<TokenStorage>(() => SecureTokenStorage());
+    // 2. Implementation details
+    i.singleton<AuthApi>(() => AuthApiImpl()); 
+  }
+
+  @override
+  void exports(Binder i) {
+    // --- PUBLIC: Это доступно другим модулям ---
+    // Мы экспортируем только интерфейс AuthService.
+    // Реализация AuthServiceImpl инжектится внутри, имея доступ к приватным зависимостям.
+    i.singleton<AuthService>(() => AuthServiceImpl(
+      storage: i.get<TokenStorage>(),
+      api: i.get<AuthApi>(),
+    ));
+  }
+}
+```
+
+## **4. Dependency Injection & Scoping**
 
 Фреймворк поддерживает дерево скоупов:
 1. **Local:** Зависимости текущего модуля.
@@ -51,7 +93,7 @@ i.get<Service>();
 i.parent<Service>();
 ```
 
-## **4. State Management Integration**
+## **5. State Management Integration**
 
 Modularity агностичен к State Management. Он управляет жизненным циклом модулей, а SM управляет состоянием UI.
 
@@ -103,7 +145,7 @@ class RiverpodPage extends StatelessWidget {
 }
 ```
 
-## **5. Retention Policy & Navigation**
+## **6. Retention Policy & Navigation**
 
 Мы используем **RouteBound Strategy** по умолчанию.
 Для корректной работы необходимо подключить `Modularity.observer`.
@@ -121,7 +163,7 @@ MaterialApp(
 - **Pop:** Модуль уничтожается (dispose).
 - **Fallback:** Если observer не подключен, модуль уничтожается при unmount виджета (Strict Strategy).
 
-## **6. Testing Strategy**
+## **7. Testing Strategy**
 
 ### **Unit Testing (Headless)**
 Используйте `testModule` из `modularity_test` для тестирования логики модуля в изоляции.
@@ -150,7 +192,7 @@ ModuleScope(
 )
 ```
 
-## **7. Routing Integration**
+## **8. Routing Integration**
 
 Modularity легко интегрируется с популярными пакетами роутинга. Главное требование — подключить `Modularity.observer`.
 
@@ -202,7 +244,7 @@ class HomePage extends StatelessWidget {
 }
 ```
 
-## **8. Developer Tools (CLI)**
+## **9. Developer Tools (CLI)**
 
 Используйте `modularity_cli` для визуализации графа зависимостей.
 

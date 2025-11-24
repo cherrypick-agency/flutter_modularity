@@ -25,6 +25,17 @@ The framework is divided into several packages to ensure separation of concerns:
 - **Observability**: Built-in `ModuleInterceptor` for logging and monitoring module transitions. CLI tools to generate dependency graphs.
 - **Framework Agnostic Routing**: Designed to work with any router (GoRouter, AutoRoute, Navigator 1.0) via simple adapters.
 
+## 💡 Ideas & Concepts
+
+### Explicit Module Interface
+
+We promote a pattern where each module strictly defines its dependency contract. This is crucial for maintaining a clean architecture in large-scale projects.
+
+- **Local Dependencies (`binds`)**: Internal implementations (e.g., Repositories, Data Sources, Helpers) that are hidden from the outside world. These are your "private" members.
+- **Exported Dependencies (`exports`)**: Public Interfaces (e.g., Services, Facades) that are provided to other modules. These are your "public" API.
+
+This distinction ensures that modules remain **encapsulated black boxes**. You can refactor the internals of a module without affecting its consumers, as long as the exported contract remains the same.
+
 ## ⚖️ Comparison
 
 How **Modularity** compares to other popular approaches in the Flutter ecosystem:

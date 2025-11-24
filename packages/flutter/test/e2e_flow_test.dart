@@ -72,6 +72,10 @@ class UserPage extends StatelessWidget {
     final binder = ModuleProvider.of(context);
     final userService = binder.get<UserService>();
     
+    // Capture the controller to pass it to the next route
+    final parentProvider = context.dependOnInheritedWidgetOfExactType<ModuleProvider>();
+    final parentController = parentProvider?.controller;
+    
     return Scaffold(
       appBar: AppBar(title: Text('User: ${userService.username}')),
       body: Center(
@@ -88,12 +92,17 @@ class UserPage extends StatelessWidget {
               ),
               ElevatedButton(
                 onPressed: () {
+                  // When navigating to a new route, we must manually extend the scope
+                  // because the new route (Overlay) is not a child of this widget in the tree.
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ModuleScope(
-                        module: FeatureModule(),
-                        child: const FeaturePage(),
+                      builder: (_) => ModuleProvider(
+                        controller: parentController!, // Re-provide UserModule's controller
+                        child: ModuleScope(
+                          module: FeatureModule(),
+                          child: const FeaturePage(),
+                        ),
                       ),
                     ),
                   );
@@ -128,7 +137,7 @@ class FeaturePage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-               const Text('Feature Page'), // Ensure const for exact match if needed, though text content is key
+               const Text('Feature Page Body'), 
                Text('User from Parent: ${userService.username}'),
             ]
           ),
@@ -158,13 +167,20 @@ void main() {
     await tester.pumpAndSettle();
 
     // Debug if text is not found
-    if (find.text('Feature Page').evaluate().isEmpty) {
+    if (find.text('Module Init Failed').evaluate().isNotEmpty) {
        debugDumpApp();
+       fail('Module Init Failed. See logs for details.');
     }
 
-    // Relaxed find - we expect at least one widget with 'Feature Page' (AppBar title + Body text)
-    // Or be specific: find.widgetWithText(AppBar, 'Feature Page')
-    expect(find.text('Feature Page'), findsWidgets); 
+    // We use descendent to find title inside AppBar
+    expect(find.descendant(
+      of: find.byType(AppBar),
+      matching: find.text('Feature Page'),
+    ), findsOneWidget);
+    
+    // And find.text for the body content
+    expect(find.text('Feature Page Body'), findsOneWidget);
+    
     expect(find.text('User from Parent: User123'), findsOneWidget);
 
     await tester.tap(find.byType(BackButton));
