@@ -54,14 +54,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  flutter_lints:
-    dependency: "direct dev"
-    description:
-      name: flutter_lints
-      sha256: a25a15ebbdfc33ab1cd26c63a6ee519df92338a9c10f122adda92938253bef04
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.0.3"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -91,14 +83,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
-  lints:
-    dependency: transitive
-    description:
-      name: lints
-      sha256: "0a217c6c989d21039f1498c3ed9f3ed71b354e69873f13a8dfc3c9fe76f1b452"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.1.1"
   matcher:
     dependency: transitive
     description:
@@ -123,42 +107,29 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.16.0"
-  modularity_cli:
-    dependency: "direct dev"
-    description:
-      path: "../../packages/modularity_cli"
-      relative: true
-    source: path
-    version: "0.0.1"
   modularity_contracts:
-    dependency: "direct main"
+    dependency: transitive
     description:
-      path: "../../packages/contracts"
-      relative: true
-    source: path
+      name: modularity_contracts
+      sha256: fd50c96e318b1a7e5a5ccd7d80ca3540214d5f770949b030bf7efd9dc0c4c2ac
+      url: "https://pub.dev"
+    source: hosted
     version: "0.0.1"
   modularity_core:
-    dependency: "direct main"
+    dependency: transitive
     description:
-      path: "../../packages/core"
-      relative: true
-    source: path
+      name: modularity_core
+      sha256: "73c1e929d592fcd951a03d007190374fdae0008d2cfdd02399988f24df9c3bed"
+      url: "https://pub.dev"
+    source: hosted
     version: "0.0.1"
   modularity_flutter:
     dependency: "direct main"
     description:
-      path: "../../packages/flutter"
+      path: ".."
       relative: true
     source: path
     version: "0.0.1"
-  nested:
-    dependency: transitive
-    description:
-      name: nested
-      sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.0"
   path:
     dependency: transitive
     description:
@@ -167,14 +138,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.9.1"
-  provider:
-    dependency: "direct main"
-    description:
-      name: provider
-      sha256: "4e82183fa20e5ca25703ead7e05de9e4cceed1fbd1eadc1ac3cb6f565a09f272"
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.1.5+1"
   sky_engine:
     dependency: transitive
     description: flutter
