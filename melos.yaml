@@ -42,8 +42,8 @@ scripts:
   test:injectable:
     exec: dart test
     packageFilters:
-      scope: modularity_injectable_adapter
-    description: Run tests for Injectable Adapter package.
+      scope: modularity_injectable
+    description: Run tests for Injectable package.
 
   test:examples:
     exec: flutter test

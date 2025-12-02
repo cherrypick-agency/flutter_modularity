@@ -1,6 +1,6 @@
-# modularity_injectable_adapter
+# modularity_injectable
 
-[![pub package](https://img.shields.io/pub/v/modularity_injectable_adapter.svg)](https://pub.dev/packages/modularity_injectable_adapter)
+[![pub package](https://img.shields.io/pub/v/modularity_injectable.svg)](https://pub.dev/packages/modularity_injectable)
 
 Optional integration package that connects **injectable** + **GetIt** code generation with the Modularity framework.
 
@@ -16,7 +16,7 @@ Optional integration package that connects **injectable** + **GetIt** code gener
 
 ```yaml
 dependencies:
-  modularity_injectable_adapter: ^0.0.1
+  modularity_injectable: ^0.0.1
 
 dev_dependencies:
   build_runner: ^2.4.0

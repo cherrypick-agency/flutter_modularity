@@ -1,4 +1,4 @@
-library modularity_injectable_adapter;
+library modularity_injectable;
 
 export 'src/get_it_binder.dart';
 export 'src/injectable_bridge.dart';

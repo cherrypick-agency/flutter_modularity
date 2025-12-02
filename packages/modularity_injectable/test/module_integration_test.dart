@@ -1,5 +1,5 @@
 import 'package:modularity_core/modularity_core.dart';
-import 'package:modularity_injectable_adapter/modularity_injectable_adapter.dart';
+import 'package:modularity_injectable/modularity_injectable.dart';
 import 'package:test/test.dart';
 
 class PublicApi {}

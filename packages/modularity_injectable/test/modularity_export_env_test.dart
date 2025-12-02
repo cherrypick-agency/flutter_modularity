@@ -1,4 +1,4 @@
-import 'package:modularity_injectable_adapter/modularity_injectable_adapter.dart';
+import 'package:modularity_injectable/modularity_injectable.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -2,7 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart' as injectable
     show EnvironmentFilter;
 import 'package:modularity_contracts/modularity_contracts.dart';
-import 'package:modularity_injectable_adapter/modularity_injectable_adapter.dart';
+import 'package:modularity_injectable/modularity_injectable.dart';
 import 'package:test/test.dart';
 
 class _PrivateService {}

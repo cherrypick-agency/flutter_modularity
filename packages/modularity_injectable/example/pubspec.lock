@@ -271,7 +271,7 @@ packages:
       relative: true
     source: path
     version: "0.0.1"
-  modularity_injectable_adapter:
+  modularity_injectable:
     dependency: "direct main"
     description:
       path: ".."

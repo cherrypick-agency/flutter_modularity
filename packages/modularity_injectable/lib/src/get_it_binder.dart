@@ -23,7 +23,10 @@ class GetItBinder implements ExportableBinder {
   })  : _privateScope = GetIt.asNewInstance(),
         _publicScope = GetIt.asNewInstance(),
         _imports = imports.toList(),
-        _parent = parent;
+        _parent = parent {
+    // Allow reassignment for hot reload support
+    _publicScope.allowReassignment = true;
+  }
 
   /// Exposes the scoped container used for private registrations.
   GetIt get internalContainer => _privateScope;
@@ -55,10 +58,7 @@ class GetItBinder implements ExportableBinder {
 
   @override
   void resetPublicScope() {
-    // Use unregister (sync) instead of reset (async)
-    for (final disposer in _publicDisposers.values) {
-      disposer();
-    }
+    // Clear tracking sets - allowReassignment handles re-registration
     _publicTypes.clear();
     _publicDisposers.clear();
     _publicSealed = false;
@@ -172,14 +172,14 @@ class GetItBinder implements ExportableBinder {
 
   /// Dispose both GetIt scopes (useful for tests).
   void dispose() {
-    resetPublicScope();
-    for (final disposer in _privateDisposers.values) {
-      disposer();
-    }
+    _publicTypes.clear();
+    _publicDisposers.clear();
+    _publicSealed = false;
     _privateTypes.clear();
     _privateDisposers.clear();
-    _privateScope.reset();
-    _publicScope.reset();
+    // Synchronously reset both scopes
+    _privateScope.reset(dispose: false);
+    _publicScope.reset(dispose: false);
   }
 
   /// Text dump describing current registrations.
