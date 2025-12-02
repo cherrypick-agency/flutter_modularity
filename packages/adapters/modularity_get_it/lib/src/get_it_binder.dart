@@ -12,6 +12,7 @@ class GetItBinder implements ExportableBinder {
 
   final Set<Type> _exportedTypes = {};
   bool _isExportMode = false;
+  bool _publicSealed = false;
 
   GetItBinder([this._parent, this._useGlobalInstance = false]) {
     _getIt = _useGlobalInstance ? GetIt.instance : GetIt.asNewInstance();
@@ -22,6 +23,21 @@ class GetItBinder implements ExportableBinder {
 
   @override
   void disableExportMode() => _isExportMode = false;
+
+  @override
+  bool get isExportModeEnabled => _isExportMode;
+
+  @override
+  bool get isPublicScopeSealed => _publicSealed;
+
+  @override
+  void sealPublicScope() => _publicSealed = true;
+
+  @override
+  void resetPublicScope() {
+    _exportedTypes.clear();
+    _publicSealed = false;
+  }
 
   @override
   void addImports(List<Binder> binders) {

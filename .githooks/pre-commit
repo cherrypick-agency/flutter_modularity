@@ -1,19 +1,30 @@
 #!/bin/sh
-# Auto-format Dart files before commit
+# Auto-format and analyze Dart files before commit
+
+set -e
 
 # Get list of staged Dart files
-DART_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.dart$')
+DART_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.dart$' || true)
 
 if [ -n "$DART_FILES" ]; then
-  echo "Formatting Dart files..."
+  echo "🔧 Running dart fix --apply..."
+  melos exec -- "dart fix --apply" 2>/dev/null || true
 
-  # Format all Dart files in the project
+  echo "📝 Formatting Dart files..."
   dart format .
 
-  # Re-add formatted files to staging
+  # Re-add formatted/fixed files to staging
   echo "$DART_FILES" | xargs git add
 
-  echo "Dart files formatted and re-staged."
+  echo "✅ Files formatted and fixed."
 fi
 
+echo "🔍 Running analyzer..."
+if ! melos run analyze; then
+  echo ""
+  echo "❌ Analyzer found errors. Fix them before committing."
+  exit 1
+fi
+
+echo "✅ All checks passed!"
 exit 0
