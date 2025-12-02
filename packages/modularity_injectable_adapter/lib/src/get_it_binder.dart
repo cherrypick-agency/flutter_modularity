@@ -55,6 +55,7 @@ class GetItBinder implements ExportableBinder {
 
   @override
   void resetPublicScope() {
+    // Use unregister (sync) instead of reset (async)
     for (final disposer in _publicDisposers.values) {
       disposer();
     }

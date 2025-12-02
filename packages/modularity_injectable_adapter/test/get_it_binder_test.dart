@@ -7,6 +7,30 @@ class _ExportedService {}
 
 class _AnotherExport {}
 
+class _FactoryService {
+  static int instanceCount = 0;
+  _FactoryService() {
+    instanceCount++;
+  }
+}
+
+class _SingletonService {
+  static int instanceCount = 0;
+  _SingletonService() {
+    instanceCount++;
+  }
+}
+
+class _EagerService {}
+
+class _ParentService {}
+
+class _SharedService {}
+
+class _ImportA {}
+
+class _ImportB {}
+
 void main() {
   group('GetItBinder', () {
     late GetItBinder provider;
@@ -15,6 +39,8 @@ void main() {
     setUp(() {
       provider = GetItBinder();
       consumer = GetItBinder(imports: [provider]);
+      _FactoryService.instanceCount = 0;
+      _SingletonService.instanceCount = 0;
     });
 
     tearDown(() {
@@ -68,6 +94,143 @@ void main() {
 
       provider.resetPublicScope();
       provider.registerLazySingleton<_AnotherExport>(() => _AnotherExport());
+    });
+
+    test('factory registration creates new instance each call', () {
+      provider.registerFactory<_FactoryService>(() => _FactoryService());
+
+      final first = provider.get<_FactoryService>();
+      final second = provider.get<_FactoryService>();
+
+      expect(first, isNot(same(second)));
+      expect(_FactoryService.instanceCount, equals(2));
+    });
+
+    test('singleton caches instance after first call', () {
+      provider
+          .registerLazySingleton<_SingletonService>(() => _SingletonService());
+
+      final first = provider.get<_SingletonService>();
+      final second = provider.get<_SingletonService>();
+
+      expect(first, same(second));
+      expect(_SingletonService.instanceCount, equals(1));
+    });
+
+    test('registerSingleton provides eager instance immediately', () {
+      final eager = _EagerService();
+      provider.registerSingleton<_EagerService>(eager);
+
+      final resolved = provider.get<_EagerService>();
+
+      expect(resolved, same(eager));
+    });
+
+    test('parent scope lookup works', () {
+      final parentBinder = GetItBinder();
+      parentBinder
+          .registerLazySingleton<_ParentService>(() => _ParentService());
+
+      final childBinder = GetItBinder(parent: parentBinder);
+
+      expect(childBinder.parent<_ParentService>(), isA<_ParentService>());
+      expect(childBinder.tryParent<_ParentService>(), isA<_ParentService>());
+
+      parentBinder.dispose();
+      childBinder.dispose();
+    });
+
+    test('resolution priority: local > imports > parent', () {
+      final parentBinder = GetItBinder();
+      parentBinder
+          .registerLazySingleton<_SharedService>(() => _SharedService());
+
+      final importBinder = GetItBinder();
+      importBinder.enableExportMode();
+      importBinder
+          .registerLazySingleton<_SharedService>(() => _SharedService());
+      importBinder.disableExportMode();
+      importBinder.sealPublicScope();
+
+      final localBinder =
+          GetItBinder(parent: parentBinder, imports: [importBinder]);
+      final localInstance = _SharedService();
+      localBinder.registerSingleton<_SharedService>(localInstance);
+
+      expect(localBinder.get<_SharedService>(), same(localInstance));
+
+      parentBinder.dispose();
+      importBinder.dispose();
+      localBinder.dispose();
+    });
+
+    test('debugGraph contains private and public types', () {
+      provider
+          .registerLazySingleton<_InternalService>(() => _InternalService());
+      provider.enableExportMode();
+      provider
+          .registerLazySingleton<_ExportedService>(() => _ExportedService());
+      provider.disableExportMode();
+
+      final graph = provider.debugGraph();
+
+      expect(graph, contains('_InternalService'));
+      expect(graph, contains('_ExportedService'));
+      expect(graph, contains('Private:'));
+      expect(graph, contains('Public:'));
+    });
+
+    test('debugGraph with imports includes nested binders', () {
+      provider.enableExportMode();
+      provider
+          .registerLazySingleton<_ExportedService>(() => _ExportedService());
+      provider.disableExportMode();
+
+      consumer
+          .registerLazySingleton<_InternalService>(() => _InternalService());
+
+      final graph = consumer.debugGraph(includeImports: true);
+
+      expect(graph, contains('_InternalService'));
+      expect(graph, contains('Imports:'));
+      expect(graph, contains('_ExportedService'));
+    });
+
+    test('dispose clears both scopes', () {
+      provider
+          .registerLazySingleton<_InternalService>(() => _InternalService());
+      provider.enableExportMode();
+      provider
+          .registerLazySingleton<_ExportedService>(() => _ExportedService());
+      provider.disableExportMode();
+
+      provider.dispose();
+
+      expect(provider.tryGet<_InternalService>(), isNull);
+      expect(provider.tryGetPublic<_ExportedService>(), isNull);
+    });
+
+    test('multiple imports from different providers', () {
+      final providerA = GetItBinder();
+      providerA.enableExportMode();
+      providerA.registerLazySingleton<_ImportA>(() => _ImportA());
+      providerA.disableExportMode();
+      providerA.sealPublicScope();
+
+      final providerB = GetItBinder();
+      providerB.enableExportMode();
+      providerB.registerLazySingleton<_ImportB>(() => _ImportB());
+      providerB.disableExportMode();
+      providerB.sealPublicScope();
+
+      final multiConsumer = GetItBinder(imports: [providerA, providerB]);
+
+      expect(multiConsumer.get<_ImportA>(), isA<_ImportA>());
+      expect(multiConsumer.get<_ImportB>(), isA<_ImportB>());
+
+      providerA.dispose();
+      providerB.dispose();
+      multiConsumer.dispose();
     });
   });
 }

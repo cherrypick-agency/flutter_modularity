@@ -1,28 +1,54 @@
 import 'package:modularity_contracts/modularity_contracts.dart';
 import 'html_generator.dart';
+import 'g6_html_generator.dart';
 import 'browser_opener.dart';
+import 'module_bindings_analyzer.dart';
+import 'graph_data.dart';
 import 'package:meta/meta.dart';
+
+/// Available visualization renderers.
+enum GraphRenderer {
+  /// Static Graphviz DOT diagram rendered via quickchart.io.
+  graphviz,
+
+  /// Interactive AntV G6 diagram with drag, zoom, and tooltips.
+  g6,
+}
 
 class GraphVisualizer {
   /// Generates a dependency graph for the given [rootModule] and opens it in the browser.
-  static Future<void> visualize(Module rootModule) async {
-    final dotContent = generateDot(rootModule);
-    final htmlContent = HtmlGenerator.generate(dotContent);
+  ///
+  /// [renderer] controls which visualization library to use:
+  /// - [GraphRenderer.graphviz] (default): Static DOT diagram via quickchart.io
+  /// - [GraphRenderer.g6]: Interactive AntV G6 diagram with tooltips
+  static Future<void> visualize(
+    Module rootModule, {
+    GraphRenderer renderer = GraphRenderer.graphviz,
+  }) async {
+    final String htmlContent;
+
+    switch (renderer) {
+      case GraphRenderer.graphviz:
+        final dotContent = generateDot(rootModule);
+        htmlContent = HtmlGenerator.generate(dotContent);
+        break;
+      case GraphRenderer.g6:
+        final graphData = buildGraphData(rootModule);
+        htmlContent = G6HtmlGenerator.generate(graphData);
+        break;
+    }
+
     await BrowserOpener.openHtml(htmlContent);
   }
 
+  /// Builds structured graph data from module tree.
   @visibleForTesting
-  static String generateDot(Module rootModule) {
-    final buffer = StringBuffer();
-    buffer.writeln('digraph Modules {');
-    // Global settings
-    buffer.writeln(
-        '  node [shape=box, style="filled,rounded", fillcolor="#e3f2fd", fontname="Arial", penwidth=1.5, color="#90caf9"];');
-    buffer.writeln('  edge [fontname="Arial", fontsize=10];');
-    buffer.writeln('  rankdir=TB;'); // Top to Bottom layout
-
+  static ModuleGraphData buildGraphData(Module rootModule) {
+    final nodes = <ModuleNode>[];
+    final edges = <ModuleEdge>[];
     final visited = <Type>{};
     final queue = [rootModule];
+    final analyzer = ModuleBindingsAnalyzer();
 
     while (queue.isNotEmpty) {
       final current = queue.removeAt(0);
@@ -31,13 +57,79 @@ class GraphVisualizer {
       if (visited.contains(currentType)) continue;
       visited.add(currentType);
 
-      // Highlight root node
-      if (current == rootModule) {
-        buffer.writeln(
-            '  "$currentType" [fillcolor="#bbdefb", color="#1565c0", penwidth=2.5];');
+      final snapshot = analyzer.analyze(current);
+      final nodeId = currentType.toString();
+
+      nodes.add(ModuleNode(
+        id: nodeId,
+        name: currentType.toString(),
+        isRoot: current == rootModule,
+        publicDependencies: snapshot.publicDependencies,
+        privateDependencies: snapshot.privateDependencies,
+        warnings: snapshot.warnings,
+      ));
+
+      for (final imported in current.imports) {
+        final importedType = imported.runtimeType;
+        edges.add(ModuleEdge(
+          source: nodeId,
+          target: importedType.toString(),
+          type: ModuleEdgeType.imports,
+        ));
+        queue.add(imported);
       }
 
-      // 1. Imports (Dependencies) - Dashed arrows
+      try {
+        for (final submodule in current.submodules) {
+          final submoduleType = submodule.runtimeType;
+          edges.add(ModuleEdge(
+            source: nodeId,
+            target: submoduleType.toString(),
+            type: ModuleEdgeType.owns,
+          ));
+          queue.add(submodule);
+        }
+      } catch (e) {
+        print('Warning: Failed to read submodules of $currentType: $e');
+      }
+    }
+
+    return ModuleGraphData(nodes: nodes, edges: edges);
+  }
+
+  @visibleForTesting
+  static String generateDot(Module rootModule) {
+    final buffer = StringBuffer();
+    buffer.writeln('digraph Modules {');
+    buffer.writeln(
+        '  node [shape=box, style="filled,rounded", fillcolor="#e3f2fd", fontname="Arial", penwidth=1.5, color="#90caf9"];');
+    buffer.writeln('  edge [fontname="Arial", fontsize=10];');
+    buffer.writeln('  rankdir=TB;');
+
+    final visited = <Type>{};
+    final queue = [rootModule];
+    final analyzer = ModuleBindingsAnalyzer();
+
+    while (queue.isNotEmpty) {
+      final current = queue.removeAt(0);
+      final currentType = current.runtimeType;
+
+      if (visited.contains(currentType)) continue;
+      visited.add(currentType);
+
+      final snapshot = analyzer.analyze(current);
+      final attributes = <String>[
+        'label=${_buildNodeLabel(snapshot)}',
+      ];
+
+      if (current == rootModule) {
+        attributes.add('fillcolor="#bbdefb"');
+        attributes.add('color="#1565c0"');
+        attributes.add('penwidth=2.5');
+      }
+
+      buffer.writeln('  "$currentType" [${attributes.join(', ')}];');
+
       for (final imported in current.imports) {
         final importedType = imported.runtimeType;
         buffer.writeln(
@@ -45,23 +137,66 @@ class GraphVisualizer {
         queue.add(imported);
       }
 
-      // 2. Submodules (Composition) - Solid arrows with Diamond tail
       try {
         for (final submodule in current.submodules) {
           final submoduleType = submodule.runtimeType;
-          // dir=back because diamond is at the tail (parent)
-          // arrowtail=diamond represents "Composition"
           buffer.writeln(
               '  "$currentType" -> "$submoduleType" [dir=back, arrowtail=diamond, color="#1565c0", penwidth=1.5, label="owns"];');
           queue.add(submodule);
         }
       } catch (e) {
-        // Handle potential errors if submodules fail to instantiate (e.g. bad constructor)
         print('Warning: Failed to read submodules of $currentType: $e');
       }
     }
 
     buffer.writeln('}');
     return buffer.toString();
+  }
+
+  static String _buildNodeLabel(ModuleBindingsSnapshot snapshot) {
+    final moduleName = _escapeHtml(snapshot.moduleType.toString());
+
+    if (!snapshot.hasBindings && snapshot.warnings.isEmpty) {
+      return '<B>$moduleName</B>';
+    }
+
+    final content = StringBuffer()
+      ..writeln(
+          '<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">')
+      ..writeln('<TR><TD><B>$moduleName</B></TD></TR>');
+
+    if (snapshot.publicDependencies.isNotEmpty) {
+      content.writeln(
+          '<TR><TD ALIGN="left"><FONT POINT-SIZE="10">Public</FONT></TD></TR>');
+      for (final dep in snapshot.publicDependencies) {
+        content.writeln(
+            '<TR><TD ALIGN="left"><FONT POINT-SIZE="9">- ${_escapeHtml(dep.displayName)}</FONT></TD></TR>');
+      }
+    }
+
+    if (snapshot.privateDependencies.isNotEmpty) {
+      content.writeln(
+          '<TR><TD ALIGN="left"><FONT POINT-SIZE="10">Private</FONT></TD></TR>');
+      for (final dep in snapshot.privateDependencies) {
+        content.writeln(
+            '<TR><TD ALIGN="left"><FONT POINT-SIZE="9">- ${_escapeHtml(dep.displayName)}</FONT></TD></TR>');
+      }
+    }
+
+    if (snapshot.warnings.isNotEmpty) {
+      content.writeln(
+          '<TR><TD ALIGN="left"><FONT POINT-SIZE="8" COLOR="#c62828">Warnings during analysis (see console)</FONT></TD></TR>');
+    }
+
+    content.writeln('</TABLE>');
+    return '<${content.toString()}>';
+  }
+
+  static String _escapeHtml(String input) {
+    return input
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;');
   }
 }

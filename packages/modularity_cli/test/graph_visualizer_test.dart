@@ -5,6 +5,10 @@ import 'package:modularity_contracts/modularity_contracts.dart';
 import 'package:test/test.dart';
 
 // --- Test Modules ---
+class _PrivateService {}
+
+class PublicService {}
+
 class RootModule extends Module {
   @override
   List<Module> get imports => [FeatureModule()];
@@ -18,7 +22,14 @@ class RootModule extends Module {
 
 class FeatureModule extends Module {
   @override
-  void binds(Binder i) {}
+  void binds(Binder i) {
+    i.singleton<_PrivateService>(() => _PrivateService());
+  }
+
+  @override
+  void exports(Binder i) {
+    i.singleton<PublicService>(() => PublicService());
+  }
 }
 
 class NestedModule extends Module {
@@ -34,11 +45,9 @@ void main() {
       print(dot);
 
       expect(dot, contains('digraph Modules {'));
-      // Root node highlighted
-      expect(
-          dot,
-          contains(
-              '"RootModule" [fillcolor="#bbdefb", color="#1565c0", penwidth=2.5];'));
+      // Root node highlighted + label attached
+      expect(dot, contains('"RootModule" [label=<'));
+      expect(dot, contains('fillcolor="#bbdefb"'));
 
       // Import arrow
       expect(
@@ -51,6 +60,10 @@ void main() {
           dot,
           contains(
               '"RootModule" -> "NestedModule" [dir=back, arrowtail=diamond, color="#1565c0", penwidth=1.5, label="owns"];'));
+
+      // Dependency lists rendered
+      expect(dot, contains('PublicService [singleton]'));
+      expect(dot, contains('_PrivateService [singleton]'));
     });
   });
 }

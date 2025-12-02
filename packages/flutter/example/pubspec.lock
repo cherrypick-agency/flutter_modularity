@@ -108,20 +108,18 @@ packages:
     source: hosted
     version: "1.16.0"
   modularity_contracts:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: modularity_contracts
-      sha256: fd50c96e318b1a7e5a5ccd7d80ca3540214d5f770949b030bf7efd9dc0c4c2ac
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../contracts"
+      relative: true
+    source: path
     version: "0.0.1"
   modularity_core:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: modularity_core
-      sha256: "73c1e929d592fcd951a03d007190374fdae0008d2cfdd02399988f24df9c3bed"
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../core"
+      relative: true
+    source: path
     version: "0.0.1"
   modularity_flutter:
     dependency: "direct main"
