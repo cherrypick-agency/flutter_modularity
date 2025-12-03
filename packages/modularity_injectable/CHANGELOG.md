@@ -1,3 +1,8 @@
+## 0.0.2
+
+- Updated dependencies to modularity_contracts ^0.0.2 and modularity_core ^0.0.2
+- Improved package metadata for pub.dev
+
 ## 0.0.1
 
 - Initial release
@@ -6,4 +11,3 @@
 - `ModularityInjectableBridge` — helper to invoke injectable-generated functions
 - `modularityExportEnv` — environment constant for marking exported dependencies
 - `ModularityExportOnly` — environment filter for selective exports
-

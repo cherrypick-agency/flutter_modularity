@@ -1,9 +1,11 @@
 import 'package:injectable/injectable.dart';
 
 /// Name of the environment flag that marks dependencies as exportable.
+///
+/// Use inside `env: [modularityExportEnvName]`.
 const modularityExportEnvName = 'modularity_export';
 
-/// Environment used to tag dependencies that should be exported outside a module.
+/// Annotation helper for teams that prefer `@Environment(...)` syntax.
 const modularityExportEnv = Environment(modularityExportEnvName);
 
 /// Filters injectable registrations so that only dependencies annotated with

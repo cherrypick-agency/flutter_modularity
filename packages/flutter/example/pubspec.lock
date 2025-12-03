@@ -113,21 +113,21 @@ packages:
       path: "../../contracts"
       relative: true
     source: path
-    version: "0.0.1"
+    version: "0.0.2"
   modularity_core:
     dependency: "direct overridden"
     description:
       path: "../../core"
       relative: true
     source: path
-    version: "0.0.1"
+    version: "0.0.2"
   modularity_flutter:
     dependency: "direct main"
     description:
       path: ".."
       relative: true
     source: path
-    version: "0.0.1"
+    version: "0.0.2"
   path:
     dependency: transitive
     description:

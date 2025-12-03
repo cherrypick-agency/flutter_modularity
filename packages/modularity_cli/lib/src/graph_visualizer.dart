@@ -66,6 +66,7 @@ class GraphVisualizer {
         isRoot: current == rootModule,
         publicDependencies: snapshot.publicDependencies,
         privateDependencies: snapshot.privateDependencies,
+        expects: snapshot.expects,
         warnings: snapshot.warnings,
       ));
 
@@ -156,7 +157,9 @@ class GraphVisualizer {
   static String _buildNodeLabel(ModuleBindingsSnapshot snapshot) {
     final moduleName = _escapeHtml(snapshot.moduleType.toString());
 
-    if (!snapshot.hasBindings && snapshot.warnings.isEmpty) {
+    if (!snapshot.hasBindings &&
+        !snapshot.hasExpects &&
+        snapshot.warnings.isEmpty) {
       return '<B>$moduleName</B>';
     }
 
@@ -180,6 +183,15 @@ class GraphVisualizer {
       for (final dep in snapshot.privateDependencies) {
         content.writeln(
             '<TR><TD ALIGN="left"><FONT POINT-SIZE="9">- ${_escapeHtml(dep.displayName)}</FONT></TD></TR>');
+      }
+    }
+
+    if (snapshot.expects.isNotEmpty) {
+      content.writeln(
+          '<TR><TD ALIGN="left"><FONT POINT-SIZE="10" COLOR="#ff8f00">Expects</FONT></TD></TR>');
+      for (final type in snapshot.expects) {
+        content.writeln(
+            '<TR><TD ALIGN="left"><FONT POINT-SIZE="9" COLOR="#ff8f00">- ${_escapeHtml(type.toString())}</FONT></TD></TR>');
       }
     }
 

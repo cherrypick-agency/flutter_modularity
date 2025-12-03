@@ -135,6 +135,7 @@ class G6HtmlGenerator {
     }
     .tooltip-section-title.public { color: #00ff88; }
     .tooltip-section-title.private { color: #ff6b6b; }
+    .tooltip-section-title.expects { color: #fbbf24; }
     .dep-item {
       padding: 2px 0;
       color: #ccc;
@@ -209,8 +210,10 @@ class G6HtmlGenerator {
         type: 'rect',
         style: (d) => {
           const isRoot = d.data?.isRoot;
+          const name = d.data?.name || d.id;
+          const width = Math.max(140, name.length * 9 + 24);
           return {
-            size: [160, 50],
+            size: [width, 44],
             radius: 8,
             fill: isRoot ? 'l(45) 0:#00d9ff 1:#00ff88' : '#2d3748',
             stroke: isRoot ? '#00ff88' : '#4a5568',
@@ -218,10 +221,12 @@ class G6HtmlGenerator {
             shadowColor: isRoot ? 'rgba(0, 217, 255, 0.3)' : 'rgba(0,0,0,0.3)',
             shadowBlur: isRoot ? 20 : 10,
             shadowOffsetY: 4,
-            labelText: d.data?.name || d.id,
+            labelText: name,
             labelFill: isRoot ? '#1a1a2e' : '#e8e8e8',
             labelFontSize: 13,
             labelFontWeight: isRoot ? 600 : 400,
+            labelPlacement: 'center',
+            labelMaxWidth: width - 16,
           };
         },
       },
@@ -277,6 +282,15 @@ class G6HtmlGenerator {
         html += '</div>';
       }
 
+      if (node.expects && node.expects.length > 0) {
+        html += '<div class="tooltip-section">';
+        html += '<div class="tooltip-section-title expects">Expects (from parent)</div>';
+        node.expects.forEach(type => {
+          html += '<div class="dep-item">' + type + '</div>';
+        });
+        html += '</div>';
+      }
+
       if (node.warnings.length > 0) {
         html += '<div class="tooltip-section">';
         html += '<div class="tooltip-section-title" style="color: #f59e0b;">Warnings</div>';
@@ -286,7 +300,7 @@ class G6HtmlGenerator {
         html += '</div>';
       }
 
-      if (node.publicDependencies.length === 0 && node.privateDependencies.length === 0) {
+      if (node.publicDependencies.length === 0 && node.privateDependencies.length === 0 && (!node.expects || node.expects.length === 0)) {
         html += '<div class="tooltip-section"><div class="dep-item" style="color: #888;">No bindings registered</div></div>';
       }
 

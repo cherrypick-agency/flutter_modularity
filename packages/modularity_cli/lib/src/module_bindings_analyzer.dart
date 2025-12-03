@@ -7,16 +7,20 @@ class ModuleBindingsSnapshot {
     required this.moduleType,
     required this.privateDependencies,
     required this.publicDependencies,
+    required this.expects,
     required this.warnings,
   });
 
   final Type moduleType;
   final List<DependencyRecord> privateDependencies;
   final List<DependencyRecord> publicDependencies;
+  final List<Type> expects;
   final List<String> warnings;
 
   bool get hasBindings =>
       privateDependencies.isNotEmpty || publicDependencies.isNotEmpty;
+
+  bool get hasExpects => expects.isNotEmpty;
 }
 
 class ModuleBindingsAnalyzer {
@@ -77,6 +81,7 @@ class ModuleBindingsAnalyzer {
       moduleType: type,
       privateDependencies: binder.privateDependencies,
       publicDependencies: binder.publicDependencies,
+      expects: List.unmodifiable(module.expects),
       warnings: List.unmodifiable(warnings),
     );
 

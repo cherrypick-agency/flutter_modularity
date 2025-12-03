@@ -1,7 +1,13 @@
 name: modularity_contracts
-description: Zero-dependency interfaces for Modularity framework.
-version: 0.0.1
+description: Zero-dependency interfaces and contracts for Modularity framework. Defines Binder, Module and other core abstractions.
+version: 0.0.2
 repository: https://github.com/cherrypick-agency/modularity_dart/tree/main/packages/contracts
+issue_tracker: https://github.com/cherrypick-agency/modularity_dart/issues
+topics:
+  - dependency-injection
+  - di
+  - interfaces
+  - contracts
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

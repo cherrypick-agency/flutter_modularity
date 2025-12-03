@@ -14,6 +14,7 @@ class ModuleNode {
     required this.isRoot,
     required this.publicDependencies,
     required this.privateDependencies,
+    required this.expects,
     required this.warnings,
   });
 
@@ -22,6 +23,7 @@ class ModuleNode {
   final bool isRoot;
   final List<DependencyRecord> publicDependencies;
   final List<DependencyRecord> privateDependencies;
+  final List<Type> expects;
   final List<String> warnings;
 
   Map<String, dynamic> toJson() => {
@@ -36,6 +38,7 @@ class ModuleNode {
             .map((DependencyRecord d) =>
                 {'type': d.type.toString(), 'kind': d.kind.label})
             .toList(),
+        'expects': expects.map((t) => t.toString()).toList(),
         'warnings': warnings,
       };
 }
