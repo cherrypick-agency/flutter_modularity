@@ -329,28 +329,28 @@ packages:
       path: "../../packages/modularity_cli"
       relative: true
     source: path
-    version: "0.0.2"
+    version: "0.1.0"
   modularity_contracts:
     dependency: "direct main"
     description:
       path: "../../packages/contracts"
       relative: true
     source: path
-    version: "0.0.2"
+    version: "0.1.0"
   modularity_core:
     dependency: "direct main"
     description:
       path: "../../packages/core"
       relative: true
     source: path
-    version: "0.0.2"
+    version: "0.1.0"
   modularity_flutter:
     dependency: "direct main"
     description:
       path: "../../packages/flutter"
       relative: true
     source: path
-    version: "0.0.2"
+    version: "0.1.0"
   nested:
     dependency: transitive
     description:

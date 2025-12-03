@@ -132,10 +132,12 @@ void main() {
 
 ## 🔍 Diagnostics
 
+### Binder Graph
+
 Need to inspect which dependencies a real module contributes? After the controllers finish initialization you can dump the binder to see both private and exported tokens (plus imported scopes):
 
 ```dart
-final registry = <Type, ModuleController>{};
+final registry = <ModuleRegistryKey, ModuleController>{};
 
 final authController = ModuleController(AuthModule());
 await authController.initialize(registry);
@@ -166,3 +168,64 @@ SimpleBinder(4c1f)
 ```
 
 Handy when you need to confirm that `AuthService` is exported while `AuthRepositoryImpl` stays private.
+
+### Lifecycle Logging
+
+Enable debug logging to trace module creation, caching, and disposal events:
+
+```dart
+void main() {
+  // Enable default console logging (debug builds only recommended)
+  Modularity.enableDebugLogging();
+
+  runApp(MyApp());
+}
+```
+
+Output example:
+
+```
+[Modularity] CREATED ConfigModule key=config-module {policy: keepAlive, hasOverrideScope: false}
+[Modularity] REGISTERED ConfigModule key=config-module {policy: keepAlive, refCount: 1, hasRoute: true}
+[Modularity] REUSED ConfigModule key=config-module {refCount: 2}
+[Modularity] ROUTETERMINATED ConfigModule {routeType: MaterialPageRoute<dynamic>}
+[Modularity] EVICTED ConfigModule key=config-module {disposeController: true}
+[Modularity] DISPOSED ConfigModule key=config-module {reason: evicted}
+```
+
+For custom integrations (analytics, crash reporting), use a custom logger:
+
+```dart
+Modularity.lifecycleLogger = (event, type, {retentionKey, details}) {
+  analytics.track('module_${event.name}', {
+    'type': type.toString(),
+    'key': retentionKey?.toString(),
+    ...?details?.map((k, v) => MapEntry(k, v.toString())),
+  });
+};
+```
+
+Available events: `created`, `reused`, `registered`, `disposed`, `evicted`, `released`, `routeTerminated`.
+
+## ⚠️ Retention Key vs Override Scope
+
+When using `keepAlive` retention policy, understand the distinction:
+
+- **`retentionKey`** determines cache identity. Two `ModuleScope` widgets with the same key share the cached controller.
+- **`overrideScope`** affects DI bindings but does NOT affect cache identity.
+
+**Implication:** If you have two scopes with the same `retentionKey` but different `overrideScope`, they share a controller — first scope's overrides win.
+
+```dart
+// ❌ Problem: Both use same retentionKey, second overrides are ignored
+ModuleScope(module: ConfigModule(), retentionKey: 'config', overrideScope: scopeA, ...)
+ModuleScope(module: ConfigModule(), retentionKey: 'config', overrideScope: scopeB, ...) // shares controller with scopeA!
+
+// ✅ Solution: Include scope identity in the key
+ModuleScope(
+  module: ConfigModule(),
+  retentionKey: 'config-${identityHashCode(scopeA)}',
+  overrideScope: scopeA,
+  ...
+)
+```

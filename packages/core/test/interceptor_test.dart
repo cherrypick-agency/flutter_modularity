@@ -38,7 +38,7 @@ void main() {
         interceptors: [interceptor],
       );
 
-      await controller.initialize({});
+      await controller.initialize(<ModuleRegistryKey, ModuleController>{});
       expect(interceptor.log, ['onInit', 'onLoaded']);
 
       await controller.dispose();
@@ -53,7 +53,7 @@ void main() {
       );
 
       try {
-        await controller.initialize({});
+        await controller.initialize(<ModuleRegistryKey, ModuleController>{});
       } catch (_) {}
 
       expect(interceptor.log, ['onInit', 'onError']);

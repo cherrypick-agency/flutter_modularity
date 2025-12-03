@@ -1,6 +1,6 @@
 name: modularity_test
 description: Testing utilities for Modularity framework. Provides mock binders, test modules and assertion helpers.
-version: 0.0.2
+version: 0.1.0
 repository: https://github.com/cherrypick-agency/modularity_dart/tree/main/packages/modularity_test
 issue_tracker: https://github.com/cherrypick-agency/modularity_dart/issues
 topics:
@@ -13,8 +13,8 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
-  modularity_contracts: ^0.0.2
-  modularity_core: ^0.0.2
+  modularity_contracts: ^0.1.0
+  modularity_core: ^0.1.0
   test: ^1.24.0
   meta: ^1.7.0
 

@@ -49,7 +49,7 @@ class AuthModule extends Module {
 
 ```dart
 void main() async {
-  final registry = <Type, ModuleController>{};
+  final registry = <ModuleRegistryKey, ModuleController>{};
   
   final controller = ModuleController(AuthModule());
   

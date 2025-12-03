@@ -33,7 +33,7 @@ Future<void> testModule<T extends Module>(
   );
 
   try {
-    await controller.initialize({});
+    await controller.initialize(<ModuleRegistryKey, ModuleController>{});
     await body(module, testBinder);
   } finally {
     await controller.dispose();

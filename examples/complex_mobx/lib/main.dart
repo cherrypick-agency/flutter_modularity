@@ -1,9 +1,15 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:modularity_flutter/modularity_flutter.dart';
 import 'src/modules/root/root_module.dart';
 import 'src/modules/auth/auth_module.dart';
 
 void main() {
+  // Enable lifecycle logging in debug mode for easier debugging
+  if (kDebugMode) {
+    Modularity.enableDebugLogging();
+  }
+
   runApp(const ComplexApp());
 }
 

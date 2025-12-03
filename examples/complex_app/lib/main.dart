@@ -1,8 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:modularity_flutter/modularity_flutter.dart';
 import 'modules/home/home_module.dart';
 
 void main() {
+  // Enable lifecycle logging in debug mode
+  if (kDebugMode) {
+    Modularity.enableDebugLogging();
+  }
+
   runApp(const MyApp());
 }
 

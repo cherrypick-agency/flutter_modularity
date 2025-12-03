@@ -1,7 +1,9 @@
-## 0.0.3
+## 0.1.0
 
 - Added `ModuleOverrideScope` for hierarchical overrides and exported it via
   `modularity_core`.
+- Added `ModuleRegistryKey` for override-aware controller caching. Controllers
+  with different override scopes are now stored separately in the global registry.
 - `ModuleController.hotReload` now preserves singleton instances while
   refreshing factories and re-applies overrides automatically (uses the new
   `RegistrationStrategy.preserveExisting`).

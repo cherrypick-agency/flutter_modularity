@@ -1,9 +1,22 @@
-## 0.0.3
+## 0.1.0
 
+### Retention Policies
 - `ModuleScope` gained `retentionPolicy`/`retentionKey`/`retentionExtras`
   support plus the new `overrideScope` parameter for child override trees.
-- The widget now reuses controllers via pluggable retention strategies instead
-  of relying on route observer hooks.
+- Formal `ModuleRetentionPolicy` enum: `strict`, `routeBound`, `keepAlive`.
+- Pluggable retention strategies with route-aware lifecycle management.
+- `KeepAlive` modules now correctly dispose when owning route terminates.
+
+### Lifecycle Logging
+- Added `ModuleLifecycleEvent` enum and `ModuleLifecycleLogger` callback.
+- New `Modularity.enableDebugLogging()` for console output in debug builds.
+- Events: `created`, `reused`, `registered`, `disposed`, `evicted`, `released`,
+  `routeTerminated`.
+
+### Documentation
+- Documented `retentionKey` vs `overrideScope` contract in `ModuleScope` and
+  `ModuleRetainer` doc comments.
+- Updated README with lifecycle logging and retention contract examples.
 
 ## 0.0.2
 

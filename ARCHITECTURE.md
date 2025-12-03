@@ -183,6 +183,51 @@ MaterialApp(
 - **Pop:** стратегия `routeBound` вызывает `dispose`, модуль удаляется из ретейнера.
 - **Unmount без роут-ивентов:** fallback к `strict`, чтобы не допустить утечек.
 
+### **6.1. Retention Key vs Override Scope**
+
+**Важно:** `retentionKey` и `overrideScope` — независимые концепции:
+
+| Параметр | Назначение | Влияет на кеш? |
+|----------|-----------|----------------|
+| `retentionKey` | Идентификатор контроллера в кеше | ✅ Да |
+| `overrideScope` | Подмена зависимостей в DI-графе | ❌ Нет |
+
+Два `ModuleScope` с одинаковым `retentionKey`, но разными `overrideScope` **шарят** один контроллер — overrides первого scope'а побеждают.
+
+```dart
+// Если нужно override-aware кеширование:
+ModuleScope(
+  module: ConfigModule(),
+  retentionKey: 'config-${identityHashCode(overrideScope)}',
+  overrideScope: overrideScope,
+  child: ...,
+)
+```
+
+### **6.2. Lifecycle Logging**
+
+Для отладки retention-поведения используйте встроенный логгер:
+
+```dart
+void main() {
+  Modularity.enableDebugLogging();
+  runApp(MyApp());
+}
+```
+
+События: `created`, `reused`, `registered`, `disposed`, `evicted`, `released`, `routeTerminated`.
+
+Для интеграции с аналитикой/мониторингом:
+
+```dart
+Modularity.lifecycleLogger = (event, type, {retentionKey, details}) {
+  Sentry.addBreadcrumb(Breadcrumb(
+    message: 'Module ${event.name}: $type',
+    data: {'key': retentionKey?.toString(), ...?details},
+  ));
+};
+```
+
 ## **7. Testing Strategy**
 
 ### **Unit Testing (Headless)**

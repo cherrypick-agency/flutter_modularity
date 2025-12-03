@@ -101,7 +101,7 @@ class DashboardController {
 /// Demo entrypoint ----------------------------------------------------------
 
 Future<void> main() async {
-  final registry = <Type, ModuleController>{};
+  final registry = <ModuleRegistryKey, ModuleController>{};
 
   final dashboardController = ModuleController(
     DashboardModule(),

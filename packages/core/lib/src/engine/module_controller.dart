@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:modularity_contracts/modularity_contracts.dart';
 import '../graph/graph_resolver.dart';
+import '../graph/module_registry_key.dart';
 import '../di/simple_binder_factory.dart';
 import '../di/simple_binder.dart';
 import 'module_override_scope.dart';
@@ -64,7 +65,7 @@ class ModuleController {
 
   /// Запуск цикла инициализации.
   Future<void> initialize(
-    Map<Type, ModuleController> globalModuleRegistry, {
+    Map<ModuleRegistryKey, ModuleController> globalModuleRegistry, {
     Set<Type>? resolutionStack,
   }) async {
     if (_currentStatus == ModuleStatus.loading ||

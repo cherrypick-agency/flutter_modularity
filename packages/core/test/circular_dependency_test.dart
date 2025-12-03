@@ -31,7 +31,7 @@ void main() {
       final controller = ModuleController(ModuleA());
 
       expect(
-        () => controller.initialize({}),
+        () => controller.initialize(<ModuleRegistryKey, ModuleController>{}),
         throwsA(predicate(
             (e) => e.toString().contains('Circular dependency detected'))),
       );
@@ -41,7 +41,7 @@ void main() {
       final controller = ModuleController(ModuleSelf());
 
       expect(
-        () => controller.initialize({}),
+        () => controller.initialize(<ModuleRegistryKey, ModuleController>{}),
         throwsA(predicate(
             (e) => e.toString().contains('Circular dependency detected'))),
       );

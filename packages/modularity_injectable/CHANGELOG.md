@@ -1,3 +1,7 @@
+## 0.1.0
+
+- Updated dependencies to modularity_contracts ^0.1.0 and modularity_core ^0.1.0.
+
 ## 0.0.2
 
 - Updated dependencies to modularity_contracts ^0.0.2 and modularity_core ^0.0.2

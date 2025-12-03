@@ -1,7 +1,8 @@
-## 0.0.3
+## 0.1.0
 
 - `testModule` accepts the new `overrideScope` parameter so tests can describe
   temporary override trees for child modules.
+- Updated dependencies to modularity_contracts ^0.1.0 and modularity_core ^0.1.0.
 
 ## 0.0.2
 

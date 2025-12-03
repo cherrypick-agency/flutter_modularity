@@ -191,10 +191,95 @@ class ParentOverridesModule extends Module {
 
 class MockService extends PublicService {}
 
+class AnotherMockService extends PublicService {}
+
 void main() {
+  group('ModuleRegistryKey', () {
+    test('equal when same type and null overrideScope', () {
+      final key1 = ModuleRegistryKey(moduleType: ProviderModule);
+      final key2 = ModuleRegistryKey(moduleType: ProviderModule);
+
+      expect(key1, equals(key2));
+      expect(key1.hashCode, equals(key2.hashCode));
+    });
+
+    test('equal when same type and identical overrideScope', () {
+      final scope = ModuleOverrideScope(selfOverrides: (binder) {});
+      final key1 = ModuleRegistryKey(
+        moduleType: ProviderModule,
+        overrideScope: scope,
+      );
+      final key2 = ModuleRegistryKey(
+        moduleType: ProviderModule,
+        overrideScope: scope,
+      );
+
+      expect(key1, equals(key2));
+      expect(key1.hashCode, equals(key2.hashCode));
+    });
+
+    test('not equal when different types', () {
+      final key1 = ModuleRegistryKey(moduleType: ProviderModule);
+      final key2 = ModuleRegistryKey(moduleType: ConsumerModule);
+
+      expect(key1, isNot(equals(key2)));
+    });
+
+    test('not equal when different overrideScope instances', () {
+      final scope1 = ModuleOverrideScope(selfOverrides: (binder) {});
+      final scope2 = ModuleOverrideScope(selfOverrides: (binder) {});
+      final key1 = ModuleRegistryKey(
+        moduleType: ProviderModule,
+        overrideScope: scope1,
+      );
+      final key2 = ModuleRegistryKey(
+        moduleType: ProviderModule,
+        overrideScope: scope2,
+      );
+
+      expect(key1, isNot(equals(key2)));
+    });
+
+    test('not equal when one has null overrideScope and other does not', () {
+      final scope = ModuleOverrideScope(selfOverrides: (binder) {});
+      final key1 = ModuleRegistryKey(moduleType: ProviderModule);
+      final key2 = ModuleRegistryKey(
+        moduleType: ProviderModule,
+        overrideScope: scope,
+      );
+
+      expect(key1, isNot(equals(key2)));
+    });
+
+    test('works correctly as Map key', () {
+      final registry = <ModuleRegistryKey, String>{};
+      final scope = ModuleOverrideScope(selfOverrides: (binder) {});
+
+      final key1 = ModuleRegistryKey(moduleType: ProviderModule);
+      final key2 = ModuleRegistryKey(
+        moduleType: ProviderModule,
+        overrideScope: scope,
+      );
+      final key3 = ModuleRegistryKey(moduleType: ConsumerModule);
+
+      registry[key1] = 'default';
+      registry[key2] = 'with-scope';
+      registry[key3] = 'consumer';
+
+      expect(registry.length, equals(3));
+      expect(registry[key1], equals('default'));
+      expect(registry[key2], equals('with-scope'));
+      expect(registry[key3], equals('consumer'));
+
+      // Same key retrieves same value
+      final key1Copy = ModuleRegistryKey(moduleType: ProviderModule);
+      expect(registry[key1Copy], equals('default'));
+    });
+  });
+
   group('ModuleController + SimpleBinder integration', () {
     test('imports expose exported dependencies to consumers', () async {
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
       final consumerController = ModuleController(ConsumerModule());
 
       await consumerController.initialize(registry);
@@ -208,7 +293,7 @@ void main() {
     });
 
     test('throws when expects are missing in imports/parent', () async {
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
       final controller = ModuleController(MissingDependencyModule());
 
       await expectLater(
@@ -218,7 +303,7 @@ void main() {
     });
 
     test('hotReload rebinds without duplicate export errors', () async {
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
       final controller = ModuleController(ConsumerModule());
 
       await controller.initialize(registry);
@@ -232,7 +317,7 @@ void main() {
 
     test('hotReload preserves singleton instances and updates factories',
         () async {
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
       final controller = ModuleController(HotReloadModule());
 
       await controller.initialize(registry);
@@ -251,7 +336,7 @@ void main() {
     });
 
     test('child override scope applies overrides to imports', () async {
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
       final overrideScope = ModuleOverrideScope(children: {
         ChildOverridesModule: ModuleOverrideScope(
           selfOverrides: (binder) {
@@ -270,13 +355,58 @@ void main() {
 
       expect(module.resolved, isA<MockService>());
     });
+
+    test('child override scope stays isolated per controller', () async {
+      final registry = <ModuleRegistryKey, ModuleController>{};
+
+      final overrideScopeA = ModuleOverrideScope(children: {
+        ChildOverridesModule: ModuleOverrideScope(
+          selfOverrides: (binder) {
+            binder.registerLazySingleton<PublicService>(() => MockService());
+          },
+        ),
+      });
+
+      final overrideScopeB = ModuleOverrideScope(children: {
+        ChildOverridesModule: ModuleOverrideScope(
+          selfOverrides: (binder) {
+            binder.registerLazySingleton<PublicService>(
+                () => AnotherMockService());
+          },
+        ),
+      });
+
+      final controllerA = ModuleController(
+        ParentOverridesModule(),
+        overrideScopeTree: overrideScopeA,
+      );
+      final controllerB = ModuleController(
+        ParentOverridesModule(),
+        overrideScopeTree: overrideScopeB,
+      );
+
+      await controllerA.initialize(registry);
+      await controllerB.initialize(registry);
+
+      expect(
+        (controllerA.module as ParentOverridesModule).resolved,
+        isA<MockService>(),
+      );
+      expect(
+        (controllerB.module as ParentOverridesModule).resolved,
+        isA<AnotherMockService>(),
+      );
+
+      await controllerA.dispose();
+      await controllerB.dispose();
+    });
   });
 
   group('ModuleController lifecycle', () {
     test('binds called before exports before onInit', () async {
       final module = LifecycleOrderModule();
       final controller = ModuleController(module);
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       await controller.initialize(registry);
 
@@ -286,7 +416,7 @@ void main() {
     test('status transitions initial -> loading -> loaded', () async {
       final module = LifecycleOrderModule();
       final controller = ModuleController(module);
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       final statuses = <ModuleStatus>[];
       controller.status.listen(statuses.add);
@@ -301,7 +431,7 @@ void main() {
 
     test('status error on exception in binds', () async {
       final controller = ModuleController(FailingBindsModule());
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       await expectLater(
         () => controller.initialize(registry),
@@ -314,7 +444,7 @@ void main() {
 
     test('status error on exception in onInit', () async {
       final controller = ModuleController(FailingOnInitModule());
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       await expectLater(
         () => controller.initialize(registry),
@@ -333,7 +463,7 @@ void main() {
         module,
         interceptors: [interceptor],
       );
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       await controller.initialize(registry);
 
@@ -347,7 +477,7 @@ void main() {
         FailingBindsModule(),
         interceptors: [interceptor],
       );
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       await expectLater(
         () => controller.initialize(registry),
@@ -364,7 +494,7 @@ void main() {
         module,
         interceptors: [interceptor],
       );
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       await controller.initialize(registry);
       await controller.dispose();
@@ -381,7 +511,7 @@ void main() {
           binder.registerSingleton<PublicService>(MockPublicService());
         },
       );
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       await controller.initialize(registry);
 
@@ -396,7 +526,7 @@ void main() {
     test('configure called with args', () async {
       final module = ConfigurableModule();
       final controller = ModuleController(module);
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       controller.configure(ConfigData('test_value'));
       await controller.initialize(registry);
@@ -410,7 +540,7 @@ void main() {
     test('dispose clears binder and updates status', () async {
       final module = LifecycleOrderModule();
       final controller = ModuleController(module);
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       await controller.initialize(registry);
       await controller.dispose();
@@ -422,7 +552,7 @@ void main() {
   group('ModuleController circular imports', () {
     test('throws on circular import A -> B -> A', () async {
       final controller = ModuleController(CircularA());
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       await expectLater(
         () => controller.initialize(registry),

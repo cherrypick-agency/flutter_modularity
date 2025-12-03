@@ -6,7 +6,7 @@ import '../retention/module_retainer.dart';
 /// Корневой виджет фреймворка.
 /// Хранит глобальный реестр активных модулей и конфигурацию DI.
 class ModularityRoot extends InheritedWidget {
-  final Map<Type, ModuleController> _registry = {};
+  final Map<ModuleRegistryKey, ModuleController> _registry = {};
   final BinderFactory binderFactory;
   final WidgetBuilder? defaultLoadingBuilder;
   final Widget Function(BuildContext, Object? error, VoidCallback retry)?
@@ -40,7 +40,8 @@ class ModularityRoot extends InheritedWidget {
     return root;
   }
 
-  static Map<Type, ModuleController> registryOf(BuildContext context) =>
+  static Map<ModuleRegistryKey, ModuleController> registryOf(
+          BuildContext context) =>
       of(context)._registry;
   static BinderFactory binderFactoryOf(BuildContext context) =>
       of(context).binderFactory;

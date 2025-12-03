@@ -1,7 +1,8 @@
-## 0.0.3
+## 0.1.0
 
 - Added `RegistrationStrategy` and `RegistrationAwareBinder` so containers can
   control how re-registrations behave (used for hot reload / overrides).
+- Added `ModuleRetentionPolicy` enum (`strict`, `routeBound`, `keepAlive`).
 
 ## 0.0.2
 

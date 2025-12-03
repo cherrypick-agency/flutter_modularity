@@ -51,7 +51,7 @@ void main() {
       final module = StandaloneModule();
       final binder = GetItBinder();
       final controller = ModuleController(module, binder: binder);
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       expect(controller.currentStatus, equals(ModuleStatus.initial));
 
@@ -68,7 +68,7 @@ void main() {
 
     test('import chain with GetItBinder: provider -> consumer with expects',
         () async {
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       final providerBinder = GetItBinder();
       final providerController = ModuleController(
@@ -98,7 +98,7 @@ void main() {
       final module = StandaloneModule();
       final binder = GetItBinder();
       final controller = ModuleController(module, binder: binder);
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       // Verify GetItBinder is recognized as ExportableBinder
       expect(binder, isA<ExportableBinder>());
@@ -134,7 +134,7 @@ void main() {
     });
 
     test('private dependencies invisible to importing module', () async {
-      final registry = <Type, ModuleController>{};
+      final registry = <ModuleRegistryKey, ModuleController>{};
 
       final providerBinder = GetItBinder();
       final providerController = ModuleController(

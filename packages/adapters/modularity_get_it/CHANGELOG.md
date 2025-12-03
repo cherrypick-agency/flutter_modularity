@@ -1,8 +1,8 @@
-## 0.0.3
+## 0.1.0
 
 - `GetItBinder` now implements `RegistrationAwareBinder` and preserves resolved
   singletons while refreshing factories during hot reload / overrides.
-- Added tests covering the new behavior.
+- Updated dependencies to modularity_contracts ^0.1.0.
 
 ## 0.0.2
 

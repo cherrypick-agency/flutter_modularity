@@ -175,14 +175,14 @@ packages:
       path: "../contracts"
       relative: true
     source: path
-    version: "0.0.2"
+    version: "0.1.0"
   modularity_core:
     dependency: "direct main"
     description:
       path: "../core"
       relative: true
     source: path
-    version: "0.0.2"
+    version: "0.1.0"
   node_preamble:
     dependency: transitive
     description:

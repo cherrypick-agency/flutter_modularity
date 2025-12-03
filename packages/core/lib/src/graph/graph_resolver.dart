@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:modularity_contracts/modularity_contracts.dart';
 import '../engine/module_controller.dart';
 import '../engine/module_override_scope.dart';
+import 'module_registry_key.dart';
 
 /// Сервис для разрешения зависимостей модуля (Imports).
 /// Отвечает за поиск, создание и инициализацию импортируемых модулей.
@@ -10,7 +11,7 @@ class GraphResolver {
   /// Возвращает список контроллеров зависимостей.
   Future<List<ModuleController>> resolveAndInitImports(
     Module module,
-    Map<Type, ModuleController> registry,
+    Map<ModuleRegistryKey, ModuleController> registry,
     BinderFactory binderFactory, {
     Set<Type>? resolutionStack,
     List<ModuleInterceptor> interceptors = const [],
@@ -33,17 +34,21 @@ class GraphResolver {
       // Важно: Получение или создание контроллера должно быть атомарным,
       // чтобы параллельные ветки не создали дубликатов.
       // В Dart этот блок не прервется, пока нет await.
-      ModuleController? controller = registry[type];
+      final childScope = overrideScope?.childFor(type);
+      final registryKey = ModuleRegistryKey(
+        moduleType: type,
+        overrideScope: childScope,
+      );
+      ModuleController? controller = registry[registryKey];
 
       if (controller == null) {
-        final childScope = overrideScope?.childFor(type);
         controller = ModuleController(
           importModule,
           binderFactory: binderFactory,
           overrideScopeTree: childScope,
           interceptors: interceptors,
         );
-        registry[type] = controller;
+        registry[registryKey] = controller;
       }
       // --- CRITICAL SECTION END ---
 

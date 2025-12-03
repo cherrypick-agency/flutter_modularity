@@ -9,19 +9,78 @@ import '../retention/retention_identity.dart';
 import 'module_provider.dart';
 import 'modularity_root.dart';
 
+/// Widget that manages the lifecycle of a [Module] and exposes its DI container.
+///
+/// ## Retention Policy
+///
+/// Controls how the [ModuleController] is retained across widget rebuilds:
+///
+/// - [ModuleRetentionPolicy.strict]: Controller disposed on every unmount.
+/// - [ModuleRetentionPolicy.routeBound]: Controller disposed when route pops.
+/// - [ModuleRetentionPolicy.keepAlive]: Controller cached in [ModuleRetainer],
+///   survives widget unmount, disposed on route termination or explicit eviction.
+///
+/// ## Retention Key vs Override Scope
+///
+/// **Important distinction**:
+///
+/// - [retentionKey] determines cache identity for KeepAlive policy.
+/// - [overrideScope] affects DI bindings but NOT cache identity.
+///
+/// Two scopes with the same [retentionKey] but different [overrideScope]s will
+/// **share** the same cached controller (first scope's overrides win).
+///
+/// To make overrides affect caching, include scope identity in the key:
+///
+/// ```dart
+/// ModuleScope(
+///   module: MyModule(),
+///   retentionPolicy: ModuleRetentionPolicy.keepAlive,
+///   retentionKey: 'my-module-${identityHashCode(overrideScope)}',
+///   overrideScope: overrideScope,
+///   child: ...,
+/// )
+/// ```
 class ModuleScope<T extends Module> extends StatefulWidget {
+  /// The module instance to manage.
   final T module;
+
+  /// Widget subtree that can access the module's DI container.
   final Widget child;
+
+  /// Arguments passed to [Configurable.configure] if module implements it.
   final dynamic args;
+
+  /// Builder for loading state UI.
   final WidgetBuilder? loadingBuilder;
+
+  /// Builder for error state UI with retry callback.
   final Widget Function(BuildContext, Object? error, VoidCallback retry)?
       errorBuilder;
+
+  /// How the controller lifecycle is managed.
+  ///
+  /// Defaults to [ModuleRetentionPolicy.routeBound].
   final ModuleRetentionPolicy retentionPolicy;
+
+  /// Explicit key for KeepAlive cache identity.
+  ///
+  /// If null, derived from module type, route, and arguments.
+  /// Does NOT include [overrideScope] by default.
   final Object? retentionKey;
+
+  /// Additional data for retention key derivation.
   final Map<String, Object?>? retentionExtras;
+
   @Deprecated('Use retentionPolicy/retentionKey instead')
   final bool disposeModule;
+
+  /// Overrides applied to module's bindings.
   final void Function(Binder)? overrides;
+
+  /// Override scope tree for this module and its imports.
+  ///
+  /// Note: Does NOT affect [retentionKey] derivation. See class documentation.
   final ModuleOverrideScope? overrideScope;
 
   const ModuleScope({
@@ -116,6 +175,17 @@ class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>> {
       controller.configure(widget.args);
     }
 
+    Modularity.log(
+      ModuleLifecycleEvent.created,
+      widget.module.runtimeType,
+      retentionKey: _retentionKey,
+      details: {
+        'policy': _policy.name,
+        'hasOverrideScope': widget.overrideScope != null,
+        'hasArgs': widget.args != null,
+      },
+    );
+
     _attachController(controller, runInitialize: true);
   }
 
@@ -179,6 +249,8 @@ class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>> {
       controllerGetter: () => _controller,
       releaseController: ({required bool disposeController}) =>
           _releaseController(disposeController: disposeController),
+      retainer: ModularityRoot.retainerOf(context),
+      route: ModalRoute.of(context),
     );
 
     _strategy = buildStrategy(_policy, binding);

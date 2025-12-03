@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:modularity_core/modularity_core.dart';
 
 import '../modularity.dart';
-import '../widgets/modularity_root.dart';
 import 'module_retainer.dart';
 
 typedef ControllerGetter = ModuleController? Function();
@@ -16,7 +17,10 @@ class ModuleRetentionBinding {
     required this.retentionKey,
     required this.controllerGetter,
     required this.releaseController,
-  }) : retainer = ModularityRoot.retainerOf(context);
+    required this.retainer,
+    this.route,
+    RouteObserver<ModalRoute>? observer,
+  });
 
   final BuildContext context;
   final Module module;
@@ -24,6 +28,8 @@ class ModuleRetentionBinding {
   final ModuleRetainer retainer;
   final ControllerGetter controllerGetter;
   final ControllerRelease releaseController;
+  final ModalRoute<dynamic>? route;
+  RouteObserver<ModalRoute> get observer => Modularity.observer;
 }
 
 abstract class ModuleRetentionStrategy {
@@ -73,29 +79,41 @@ class KeepAliveRetentionStrategy extends ModuleRetentionStrategy {
 
   bool _registered = false;
   bool _released = false;
+  bool _routeTerminationHandled = false;
 
   @override
   void didChangeDependencies() {}
 
   @override
   ModuleController? reuseExisting() {
+    if (_routeTerminationHandled) {
+      return null;
+    }
     final controller = binding.retainer.acquire(binding.retentionKey);
     if (controller != null) {
       _registered = true;
       _released = false;
+      _routeTerminationHandled = false;
     }
     return controller;
   }
 
   @override
   void onControllerCreated(ModuleController controller) {
+    if (_routeTerminationHandled) {
+      return;
+    }
     if (_registered) return;
     binding.retainer.register(
       key: binding.retentionKey,
       controller: controller,
+      policy: ModuleRetentionPolicy.keepAlive,
+      route: binding.route,
+      onRouteTerminated: _handleRouteTermination,
     );
     _registered = true;
     _released = false;
+    _routeTerminationHandled = false;
   }
 
   @override
@@ -108,10 +126,11 @@ class KeepAliveRetentionStrategy extends ModuleRetentionStrategy {
     }
     _registered = false;
     _released = false;
+    _routeTerminationHandled = false;
   }
 
   @override
-  Future<void> disposeNow() => onStateDispose();
+  Future<void> disposeNow() async => _evictRetainedController();
 
   @override
   Future<void> onStateDispose() async {
@@ -123,6 +142,25 @@ class KeepAliveRetentionStrategy extends ModuleRetentionStrategy {
     _released = true;
     await binding.releaseController(disposeController: false);
     await binding.retainer.release(binding.retentionKey);
+  }
+
+  Future<void> _evictRetainedController() async {
+    if (!_registered) {
+      await binding.releaseController(disposeController: true);
+      return;
+    }
+    await binding.releaseController(disposeController: false);
+    await binding.retainer
+        .evict(binding.retentionKey, disposeController: false);
+    _registered = false;
+    _released = true;
+    _routeTerminationHandled = true;
+  }
+
+  void _handleRouteTermination() {
+    if (_routeTerminationHandled) return;
+    _routeTerminationHandled = true;
+    unawaited(_evictRetainedController());
   }
 }
 
@@ -178,6 +216,11 @@ class RouteBoundRetentionStrategy extends ModuleRetentionStrategy
 
   @override
   void didPop() {
+    disposeNow();
+  }
+
+  /// Called when the route is removed without popping.
+  void didRemove() {
     disposeNow();
   }
 }
