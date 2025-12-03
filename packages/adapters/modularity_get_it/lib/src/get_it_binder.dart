@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:get_it/get_it.dart';
 import 'package:modularity_contracts/modularity_contracts.dart';
 
-class GetItBinder implements ExportableBinder {
+class GetItBinder implements ExportableBinder, RegistrationAwareBinder {
   late final GetIt _getIt;
   final bool _useGlobalInstance;
   final List<FutureOr<void> Function()> _cleanupCallbacks = [];
@@ -13,6 +13,11 @@ class GetItBinder implements ExportableBinder {
   final Set<Type> _exportedTypes = {};
   bool _isExportMode = false;
   bool _publicSealed = false;
+  final List<RegistrationStrategy> _strategyStack = [
+    RegistrationStrategy.replace
+  ];
+  final Map<Type, Object Function()> _factoryDelegates = {};
+  final Map<Type, Object Function()> _lazySingletonDelegates = {};
 
   GetItBinder([this._parent, this._useGlobalInstance = false]) {
     _getIt = _useGlobalInstance ? GetIt.instance : GetIt.asNewInstance();
@@ -35,7 +40,6 @@ class GetItBinder implements ExportableBinder {
 
   @override
   void resetPublicScope() {
-    _exportedTypes.clear();
     _publicSealed = false;
   }
 
@@ -67,20 +71,69 @@ class GetItBinder implements ExportableBinder {
 
   @override
   void registerLazySingleton<T extends Object>(T Function() factory) {
+    _assertCanExport();
+    final isPreserve =
+        registrationStrategy == RegistrationStrategy.preserveExisting;
+
+    if (_getIt.isRegistered<T>()) {
+      if (isPreserve && _lazySingletonDelegates.containsKey(T)) {
+        _lazySingletonDelegates[T] = factory;
+        return;
+      }
+      _ensureUnregistered<T>();
+    }
+
+    _lazySingletonDelegates[T] = factory;
     _trackExport<T>();
     _trackRegistration<T>();
-    _getIt.registerLazySingleton<T>(factory);
+    _getIt.registerLazySingleton<T>(() {
+      final creator = _lazySingletonDelegates[T] as T Function()?;
+      if (creator == null) {
+        throw StateError('Factory for $T is not registered.');
+      }
+      return creator();
+    });
   }
 
   @override
   void registerFactory<T extends Object>(T Function() factory) {
+    _assertCanExport();
+    final isPreserve =
+        registrationStrategy == RegistrationStrategy.preserveExisting;
+
+    if (_getIt.isRegistered<T>()) {
+      if (isPreserve && _factoryDelegates.containsKey(T)) {
+        _factoryDelegates[T] = factory;
+        return;
+      }
+      _ensureUnregistered<T>();
+    }
+
+    _factoryDelegates[T] = factory;
     _trackExport<T>();
     _trackRegistration<T>();
-    _getIt.registerFactory<T>(factory);
+    _getIt.registerFactory<T>(() {
+      final creator = _factoryDelegates[T] as T Function()?;
+      if (creator == null) {
+        throw StateError('Factory for $T is not registered.');
+      }
+      return creator();
+    });
   }
 
   @override
   void registerSingleton<T extends Object>(T instance) {
+    _assertCanExport();
+    final isPreserve =
+        registrationStrategy == RegistrationStrategy.preserveExisting;
+
+    if (_getIt.isRegistered<T>()) {
+      if (isPreserve) {
+        return;
+      }
+      _ensureUnregistered<T>();
+    }
+
     _trackExport<T>();
     _trackRegistration<T>();
     _getIt.registerSingleton<T>(instance);
@@ -174,6 +227,45 @@ class GetItBinder implements ExportableBinder {
       _cleanupCallbacks.clear();
     } else {
       await _getIt.reset();
+    }
+    _exportedTypes.clear();
+    _factoryDelegates.clear();
+    _lazySingletonDelegates.clear();
+  }
+
+  @override
+  RegistrationStrategy get registrationStrategy => _strategyStack.last;
+
+  @override
+  T runWithStrategy<T>(
+    RegistrationStrategy strategy,
+    T Function() body,
+  ) {
+    _strategyStack.add(strategy);
+    try {
+      return body();
+    } finally {
+      _strategyStack.removeLast();
+    }
+  }
+
+  void _assertCanExport() {
+    if (_isExportMode && _publicSealed) {
+      throw StateError(
+        'Public scope is sealed. Call resetPublicScope() before registering new exports.',
+      );
+    }
+  }
+
+  void _ensureUnregistered<T extends Object>() {
+    if (_getIt.isRegistered<T>()) {
+      _factoryDelegates.remove(T);
+      _lazySingletonDelegates.remove(T);
+      _exportedTypes.remove(T);
+      final result = _getIt.unregister<T>();
+      if (result is Future<void>) {
+        unawaited(result);
+      }
     }
   }
 }

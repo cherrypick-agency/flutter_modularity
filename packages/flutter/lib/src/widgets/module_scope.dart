@@ -2,9 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:modularity_core/modularity_core.dart';
+
+import '../modularity.dart';
+import '../retention/module_retention_strategy.dart';
+import '../retention/retention_identity.dart';
 import 'module_provider.dart';
 import 'modularity_root.dart';
-import '../modularity.dart';
 
 class ModuleScope<T extends Module> extends StatefulWidget {
   final T module;
@@ -13,8 +16,13 @@ class ModuleScope<T extends Module> extends StatefulWidget {
   final WidgetBuilder? loadingBuilder;
   final Widget Function(BuildContext, Object? error, VoidCallback retry)?
       errorBuilder;
+  final ModuleRetentionPolicy retentionPolicy;
+  final Object? retentionKey;
+  final Map<String, Object?>? retentionExtras;
+  @Deprecated('Use retentionPolicy/retentionKey instead')
   final bool disposeModule;
   final void Function(Binder)? overrides;
+  final ModuleOverrideScope? overrideScope;
 
   const ModuleScope({
     Key? key,
@@ -23,45 +31,61 @@ class ModuleScope<T extends Module> extends StatefulWidget {
     this.args,
     this.loadingBuilder,
     this.errorBuilder,
+    this.retentionPolicy = ModuleRetentionPolicy.routeBound,
+    this.retentionKey,
+    this.retentionExtras,
+    @Deprecated('Use retentionPolicy/retentionKey instead')
     this.disposeModule = true,
     this.overrides,
+    this.overrideScope,
   }) : super(key: key);
 
   @override
   _ModuleScopeState<T> createState() => _ModuleScopeState<T>();
 }
 
-class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>>
-    with RouteAware {
+class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>> {
   ModuleController? _controller;
   StreamSubscription? _statusSub;
   ModuleStatus _status = ModuleStatus.initial;
   Object? _error;
-  bool _isDisposedByRoute = false;
+  late ModuleRetentionPolicy _policy;
+  Object? _retentionKey;
+  ModuleRetentionStrategy? _strategy;
+  bool _retentionInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _policy = _derivePolicy(widget);
+  }
+
+  @override
+  void didUpdateWidget(covariant ModuleScope<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    assert(
+      oldWidget.retentionPolicy == widget.retentionPolicy,
+      'Changing retentionPolicy at runtime is not supported. '
+      'Rebuild ModuleScope with a new instance instead.',
+    );
+    assert(
+      oldWidget.retentionKey == widget.retentionKey,
+      'Changing retentionKey at runtime is not supported.',
+    );
+    // ignore: deprecated_member_use_from_same_package
+    assert(
+      // ignore: deprecated_member_use_from_same_package
+      oldWidget.disposeModule == widget.disposeModule,
+      'Changing disposeModule at runtime is not supported.',
+    );
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
-    // Subscribe to RouteObserver for Retention Policy
-    final route = ModalRoute.of(context);
-    if (route is ModalRoute) {
-      // Ensure it's a ModalRoute
-      Modularity.observer.subscribe(this, route);
-    }
-
-    if (_controller == null) {
-      _createAndInitController();
-    }
-  }
-
-  @override
-  void didPop() {
-    // RouteBound Strategy: Dispose when popped from stack
-    if (widget.disposeModule && !_isDisposedByRoute) {
-      _isDisposedByRoute = true;
-      _controller?.dispose();
-    }
+    _ensureStrategyInitialized();
+    _strategy?.didChangeDependencies();
+    _ensureController();
   }
 
   void _createAndInitController() {
@@ -78,54 +102,135 @@ class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>>
     // Create Binder with parent
     final binder = factory.create(parentBinder);
 
-    _controller = ModuleController(
+    final controller = ModuleController(
       widget.module,
       binder: binder,
       binderFactory: factory,
       overrides: widget.overrides,
+      overrideScopeTree: widget.overrideScope,
       interceptors: Modularity.interceptors, // Pass global interceptors
     );
 
     // Конфигурируем (args передаются в configure(T args))
     if (widget.args != null) {
-      _controller!.configure(widget.args);
+      controller.configure(widget.args);
     }
 
-    _init();
+    _attachController(controller, runInitialize: true);
   }
 
-  void _init() {
-    if (_controller == null) return;
+  void _attachController(
+    ModuleController controller, {
+    required bool runInitialize,
+  }) {
+    _controller = controller;
+    _init(runInitialize: runInitialize);
+  }
 
-    final registry = ModularityRoot.registryOf(context);
+  void _init({required bool runInitialize}) {
+    final controller = _controller;
+    if (controller == null) return;
 
-    // Подписка на статус
-    _statusSub = _controller!.status.listen((status) {
+    _status = controller.currentStatus;
+    if (_status == ModuleStatus.error) {
+      _error = controller.lastError;
+    }
+
+    _statusSub?.cancel();
+    _statusSub = controller.status.listen((status) {
       if (mounted) {
         setState(() {
           _status = status;
           if (status == ModuleStatus.error) {
-            _error = _controller!.lastError;
+            _error = controller.lastError;
           }
         });
       }
     });
 
-    _controller!.initialize(registry).catchError((e) {
-      // Ошибки ловим в listen
-    });
+    if (runInitialize) {
+      final registry = ModularityRoot.registryOf(context);
+      controller.initialize(registry).catchError((_) {
+        // Ошибки ловим в listen
+      });
+    }
+  }
+
+  void _ensureStrategyInitialized() {
+    if (_retentionInitialized && _strategy != null) {
+      return;
+    }
+
+    final parentKey = _RetentionKeyScope.maybeOf(context);
+    final derivedKey = deriveRetentionKey(
+      module: widget.module,
+      context: context,
+      explicitKey: widget.retentionKey,
+      parentKey: parentKey,
+      args: widget.args,
+      extras: widget.retentionExtras,
+    );
+    _retentionKey = derivedKey;
+
+    final binding = ModuleRetentionBinding(
+      context: context,
+      module: widget.module,
+      retentionKey: derivedKey,
+      controllerGetter: () => _controller,
+      releaseController: ({required bool disposeController}) =>
+          _releaseController(disposeController: disposeController),
+    );
+
+    _strategy = buildStrategy(_policy, binding);
+    _retentionInitialized = true;
+  }
+
+  void _ensureController() {
+    if (_controller != null) return;
+
+    final reused = _strategy?.reuseExisting();
+    if (reused != null) {
+      _attachController(reused, runInitialize: false);
+      return;
+    }
+
+    _createAndInitController();
+    final controller = _controller;
+    if (controller != null) {
+      _strategy?.onControllerCreated(controller);
+    }
+  }
+
+  Future<void> _releaseController({required bool disposeController}) async {
+    final controller = _controller;
+    if (controller == null) return;
+    _statusSub?.cancel();
+    _statusSub = null;
+    _controller = null;
+    if (disposeController) {
+      await controller.dispose();
+    }
+  }
+
+  ModuleRetentionPolicy _derivePolicy(ModuleScope<T> scope) {
+    // ignore: deprecated_member_use_from_same_package
+    if (!scope.disposeModule) {
+      return ModuleRetentionPolicy.keepAlive;
+    }
+    return scope.retentionPolicy;
   }
 
   @override
   void dispose() {
-    Modularity.observer.unsubscribe(this);
     _statusSub?.cancel();
+    _statusSub = null;
+    final strategy = _strategy;
+    _strategy = null;
 
-    // Fallback Strategy: Strict Dispose (on unmount)
-    // Если модуль еще не был удален через didPop (например, удаление виджета из дерева без навигации),
-    // мы обязаны его удалить, чтобы не было утечек.
-    if (widget.disposeModule && !_isDisposedByRoute) {
-      _controller?.dispose();
+    if (strategy != null) {
+      unawaited(strategy.onStateDispose());
+    } else {
+      unawaited(_releaseController(disposeController: true));
     }
 
     super.dispose();
@@ -133,13 +238,24 @@ class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>>
 
   @override
   Widget build(BuildContext context) {
-    if (_controller == null) {
+    final controller = _controller;
+    if (controller == null) {
       return const SizedBox.shrink();
     }
 
-    return ModuleProvider(
-      controller: _controller!,
+    final content = ModuleProvider(
+      controller: controller,
       child: _buildContent(),
+    );
+
+    final key = _retentionKey;
+    if (key == null) {
+      return content;
+    }
+
+    return _RetentionKeyScope(
+      value: key,
+      child: content,
     );
   }
 
@@ -213,14 +329,42 @@ class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>>
   }
 
   void _retry() {
-    _statusSub?.cancel();
-    _controller?.dispose();
-    _isDisposedByRoute = false;
+    unawaited(_handleRetry());
+  }
+
+  Future<void> _handleRetry() async {
+    if (_strategy != null) {
+      await _strategy!.onRetry();
+    } else {
+      await _releaseController(disposeController: true);
+    }
+
+    if (!mounted) return;
 
     setState(() {
       _status = ModuleStatus.initial;
-      // Sync creation to avoid empty frame
-      _createAndInitController();
+      _error = null;
     });
+
+    _ensureController();
   }
+}
+
+class _RetentionKeyScope extends InheritedWidget {
+  const _RetentionKeyScope({
+    required this.value,
+    required super.child,
+  });
+
+  final Object value;
+
+  static Object? maybeOf(BuildContext context) {
+    final scope =
+        context.dependOnInheritedWidgetOfExactType<_RetentionKeyScope>();
+    return scope?.value;
+  }
+
+  @override
+  bool updateShouldNotify(_RetentionKeyScope oldWidget) =>
+      value != oldWidget.value;
 }

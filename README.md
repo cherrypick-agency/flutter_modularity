@@ -24,7 +24,7 @@ Repository: [github.com/cherrypick-agency/modularity_dart](https://github.com/ch
 
 - **Strict Dependency Injection**: Dependencies are explicitly `imported` and `exported`. No hidden global access.
 - **Deterministic Lifecycle**: Modules pass through a formal state machine (`initial` → `loading` → `loaded` → `disposed`). `onInit` runs only after all imports are ready.
-- **Retention Policies**: Control module lifetime (`RouteBound`, `KeepAlive`, `Strict`).
+- **Retention Policies**: Formal `ModuleRetentionPolicy` enum (`routeBound`, `keepAlive`, `strict`) with pluggable strategies and cache-backed retainer.
 - **Framework Agnostic**: Works with GoRouter, AutoRoute, or Navigator 1.0.
 - **Observability**: Built-in interceptors and Graphviz visualization support.
 
@@ -88,6 +88,16 @@ void main() {
   ));
 }
 ```
+
+> Need to keep modules alive across tab switches or background navigation layers? Set the retention policy explicitly:
+>
+> ```dart
+> ModuleScope(
+>   module: ProfileModule(),
+>   retentionPolicy: ModuleRetentionPolicy.keepAlive,
+>   child: ProfilePage(),
+> );
+> ```
 
 ### 3. Use in UI
 

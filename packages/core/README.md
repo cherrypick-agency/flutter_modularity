@@ -110,6 +110,36 @@ class MyModule extends Module {
 controller.hotReload();
 ```
 
+Behind the scenes `ModuleController` switches the underlying binder into
+`RegistrationStrategy.preserveExisting`, so singleton instances survive the
+rebind while factories are refreshed with the latest code.
+
+### Scoped overrides
+
+Use `ModuleOverrideScope` when you need to override dependencies for imported
+modules only during tests or hot reload:
+
+```dart
+final overrides = ModuleOverrideScope(children: {
+  AuthModule: ModuleOverrideScope(
+    selfOverrides: (binder) {
+      binder.registerLazySingleton<AuthApi>(() => FakeAuthApi());
+    },
+  ),
+});
+
+await testModule(
+  DashboardModule(),
+  (module, binder) {
+    // ...
+  },
+  overrideScope: overrides,
+);
+```
+
+Overrides run after `binds` and before `exports`, and they are re-applied
+automatically during hot reload.
+
 ### Interceptors
 
 ```dart

@@ -4,7 +4,7 @@ enum _DependencyType { factory, singleton, instance }
 
 class _Registration {
   final _DependencyType type;
-  final Object Function() factory;
+  Object Function() factory;
   Object? instance;
 
   _Registration({
@@ -16,7 +16,7 @@ class _Registration {
 
 /// Простая реализация Binder на основе Map.
 /// Поддерживает разделение на Public (Exports) и Private (Binds) зависимости.
-class SimpleBinder implements ExportableBinder {
+class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
   final Map<Type, _Registration> _privateRegistrations = {};
   final Map<Type, _Registration> _publicRegistrations = {};
 
@@ -32,6 +32,10 @@ class SimpleBinder implements ExportableBinder {
   /// После завершения exports публичный скоуп может быть «заморожен» для защиты
   /// от пост-регистраций. Hot reload может сбросить этот флаг.
   bool _publicSealed = false;
+
+  final List<RegistrationStrategy> _strategyStack = [
+    RegistrationStrategy.replace
+  ];
 
   SimpleBinder({
     List<Binder> imports = const [],
@@ -102,21 +106,33 @@ class SimpleBinder implements ExportableBinder {
       registerFactory(factory);
 
   void _register<T extends Object>(_Registration reg) {
-    if (_isExportMode) {
-      if (_publicSealed) {
-        throw StateError(
-          'Public scope is sealed. Call resetPublicScope() before registering new exports.',
-        );
-      }
-      if (_publicRegistrations.containsKey(T)) {
+    final target = _isExportMode ? _publicRegistrations : _privateRegistrations;
+    final existing = target[T];
+    final isPreserve =
+        registrationStrategy == RegistrationStrategy.preserveExisting;
+
+    if (_isExportMode && _publicSealed) {
+      throw StateError(
+        'Public scope is sealed. Call resetPublicScope() before registering new exports.',
+      );
+    }
+
+    if (existing != null) {
+      if (_isExportMode &&
+          !isPreserve &&
+          registrationStrategy == RegistrationStrategy.replace) {
         throw StateError(
           'Type $T is already exported in this module. Duplicate exports are not allowed.',
         );
       }
-      _publicRegistrations[T] = reg;
-      return;
+
+      if (isPreserve) {
+        existing.factory = reg.factory;
+        return;
+      }
     }
-    _privateRegistrations[T] = reg;
+
+    target[T] = reg;
   }
 
   @override
@@ -238,6 +254,22 @@ class SimpleBinder implements ExportableBinder {
     _privateRegistrations.clear();
     _publicRegistrations.clear();
     _publicSealed = false;
+  }
+
+  @override
+  RegistrationStrategy get registrationStrategy => _strategyStack.last;
+
+  @override
+  T runWithStrategy<T>(
+    RegistrationStrategy strategy,
+    T Function() body,
+  ) {
+    _strategyStack.add(strategy);
+    try {
+      return body();
+    } finally {
+      _strategyStack.removeLast();
+    }
   }
 
   /// Простая текстовая диагностика текущего состояния биндеров.

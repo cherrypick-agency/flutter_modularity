@@ -151,6 +151,51 @@ void main() {
       expect(resolved, same(eager));
     });
 
+    test('preserve strategy keeps existing singleton instances', () {
+      binder
+          .registerLazySingleton<_SingletonService>(() => _SingletonService());
+      final initial = binder.get<_SingletonService>();
+
+      binder.runWithStrategy(RegistrationStrategy.preserveExisting, () {
+        binder.registerLazySingleton<_SingletonService>(
+            () => _SingletonService());
+      });
+
+      final after = binder.get<_SingletonService>();
+      expect(after, same(initial));
+      expect(_SingletonService.instanceCount, equals(1));
+    });
+
+    test('preserve strategy updates factory registrations', () {
+      binder.registerFactory<_FactoryService>(() => _FactoryService());
+      binder.get<_FactoryService>();
+      expect(_FactoryService.instanceCount, equals(1));
+
+      binder.runWithStrategy(RegistrationStrategy.preserveExisting, () {
+        binder.registerFactory<_FactoryService>(() => _FactoryService());
+      });
+
+      binder.get<_FactoryService>();
+      expect(_FactoryService.instanceCount, equals(2));
+    });
+
+    test('preserve strategy allows re-export after reset', () {
+      binder.enableExportMode();
+      binder.registerFactory<_PublicService>(() => _PublicService());
+      binder.disableExportMode();
+      binder.sealPublicScope();
+
+      binder.resetPublicScope();
+      binder.runWithStrategy(RegistrationStrategy.preserveExisting, () {
+        binder.enableExportMode();
+        expect(
+          () => binder.registerFactory<_PublicService>(() => _PublicService()),
+          returnsNormally,
+        );
+        binder.disableExportMode();
+      });
+    });
+
     test('import chain 3-level: consumer -> mid -> base', () {
       final base = SimpleBinder();
       base.enableExportMode();

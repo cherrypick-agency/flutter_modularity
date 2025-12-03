@@ -1,3 +1,9 @@
+## 0.0.3
+
+- `GetItBinder` now implements `RegistrationAwareBinder` and preserves resolved
+  singletons while refreshing factories during hot reload / overrides.
+- Added tests covering the new behavior.
+
 ## 0.0.2
 
 - Implemented `sealPublicScope()` and `resetPublicScope()` in `GetItBinder`

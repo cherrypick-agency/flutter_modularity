@@ -6,6 +6,11 @@ class PublicService {}
 
 class PrivateImpl {}
 
+class HotReloadFactory {
+  final int version;
+  HotReloadFactory(this.version);
+}
+
 class ProviderModule extends Module {
   @override
   void binds(Binder i) {
@@ -149,6 +154,43 @@ class CircularB extends Module {
   void binds(Binder i) {}
 }
 
+class HotReloadModule extends Module {
+  int bindsCount = 0;
+
+  @override
+  void binds(Binder i) {
+    bindsCount++;
+    i.registerLazySingleton<PublicService>(() => PublicService());
+    i.registerFactory<HotReloadFactory>(() => HotReloadFactory(bindsCount));
+  }
+}
+
+class ChildOverridesModule extends Module {
+  @override
+  void binds(Binder i) {
+    i.registerLazySingleton<PublicService>(() => PublicService());
+  }
+
+  @override
+  void exports(Binder i) {
+    i.registerLazySingleton<PublicService>(() => i.get<PublicService>());
+  }
+}
+
+class ParentOverridesModule extends Module {
+  PublicService? resolved;
+
+  @override
+  List<Module> get imports => [ChildOverridesModule()];
+
+  @override
+  void binds(Binder i) {
+    resolved = i.get<PublicService>();
+  }
+}
+
+class MockService extends PublicService {}
+
 void main() {
   group('ModuleController + SimpleBinder integration', () {
     test('imports expose exported dependencies to consumers', () async {
@@ -186,6 +228,47 @@ void main() {
         controller.binder.get<PublicService>(),
         isA<PublicService>(),
       );
+    });
+
+    test('hotReload preserves singleton instances and updates factories',
+        () async {
+      final registry = <Type, ModuleController>{};
+      final controller = ModuleController(HotReloadModule());
+
+      await controller.initialize(registry);
+
+      final singleton1 = controller.binder.get<PublicService>();
+      final factory1 = controller.binder.get<HotReloadFactory>();
+      expect(factory1.version, equals(1));
+
+      controller.hotReload();
+
+      final singleton2 = controller.binder.get<PublicService>();
+      final factory2 = controller.binder.get<HotReloadFactory>();
+
+      expect(singleton2, same(singleton1));
+      expect(factory2.version, equals(2));
+    });
+
+    test('child override scope applies overrides to imports', () async {
+      final registry = <Type, ModuleController>{};
+      final overrideScope = ModuleOverrideScope(children: {
+        ChildOverridesModule: ModuleOverrideScope(
+          selfOverrides: (binder) {
+            binder.registerLazySingleton<PublicService>(() => MockService());
+          },
+        ),
+      });
+
+      final controller = ModuleController(
+        ParentOverridesModule(),
+        overrideScopeTree: overrideScope,
+      );
+
+      await controller.initialize(registry);
+      final module = controller.module as ParentOverridesModule;
+
+      expect(module.resolved, isA<MockService>());
     });
   });
 

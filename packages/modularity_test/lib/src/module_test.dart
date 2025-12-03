@@ -18,15 +18,19 @@ Future<void> testModule<T extends Module>(
   T module,
   FutureOr<void> Function(T module, TestBinder binder) body, {
   void Function(Binder)? overrides,
+  ModuleOverrideScope? overrideScope,
 }) async {
   // Create a real binder and wrap it with TestBinder
   final factory = SimpleBinderFactory();
   final realBinder = factory.create();
   final testBinder = TestBinder(realBinder);
 
-  final controller = ModuleController(module,
-      binder: testBinder, // Inject TestBinder
-      overrides: overrides);
+  final controller = ModuleController(
+    module,
+    binder: testBinder, // Inject TestBinder
+    overrides: overrides,
+    overrideScopeTree: overrideScope,
+  );
 
   try {
     await controller.initialize({});

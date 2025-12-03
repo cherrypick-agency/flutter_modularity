@@ -32,9 +32,9 @@
   - `expects` — Fail-Fast проверка наличия необходимых зависимостей от родителя.
 
 - **Управление временем жизни (Retention Policy)**:
-  - **RouteBound** — Реализуется через `RouteObserver` в `ModuleScope`. Модуль живёт, пока его роут в стеке.
-  - **KeepAlive** — Управление через флаг `disposeModule` (или сохранение контроллера выше по дереву).
-  - **Strict** — Уничтожение при unmount виджета `ModuleScope`.
+  - **RouteBound** — `ModuleRetentionPolicy.routeBound` + `RouteObserver`. Модуль живёт, пока его роут в стеке.
+  - **KeepAlive** — Cache-backed `ModuleRetainer` хранит контроллер и восстанавливает его при повторном появлении `ModuleScope`.
+  - **Strict** — Немедленное уничтожение при unmount виджета `ModuleScope`.
 
 - **Observability (Наблюдаемость)**:
   - **Interceptors** (`ModuleInterceptor`) — Глобальные хуки на `onInit`, `onLoaded`, `onError`, `onDispose`.

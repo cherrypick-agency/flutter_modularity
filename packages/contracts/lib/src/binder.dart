@@ -1,3 +1,13 @@
+/// Определяет стратегию поведения при повторной регистрации зависимостей.
+enum RegistrationStrategy {
+  /// Повторная регистрация заменяет предыдущее значение (по умолчанию).
+  replace,
+
+  /// Повторная регистрация сохраняет существующие синглтоны/инстансы и
+  /// обновляет только фабрики.
+  preserveExisting,
+}
+
 /// Интерфейс для регистрации зависимостей.
 /// Абстрагирует конкретную реализацию DI (будь то GetIt, карта или что-то еще).
 abstract class Binder {
@@ -71,4 +81,15 @@ abstract class ExportableBinder implements Binder {
 
   /// Флаг, показывающий, что публичный скоуп был заморожен.
   bool get isPublicScopeSealed;
+}
+
+/// Дополнительный контракт для Binder, который умеет переключать стратегию
+/// регистрации во время выполнения (например, для hot reload).
+abstract class RegistrationAwareBinder implements Binder {
+  /// Текущая стратегия регистрации.
+  RegistrationStrategy get registrationStrategy;
+
+  /// Выполняет [body] с указанной [strategy], автоматически восстанавливая
+  /// предыдущую стратегию после завершения.
+  T runWithStrategy<T>(RegistrationStrategy strategy, T Function() body);
 }

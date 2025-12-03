@@ -153,8 +153,22 @@ class RiverpodPage extends StatelessWidget {
 
 ## **6. Retention Policy & Navigation**
 
-Мы используем **RouteBound Strategy** по умолчанию.
-Для корректной работы необходимо подключить `Modularity.observer`.
+Жизненный цикл виджета `ModuleScope` управляется формальной политикой `ModuleRetentionPolicy`:
+
+- `routeBound` — дефолт. Привязка к навигационному стеку (`RouteObserver`). Модуль уничтожается в `didPop`.
+- `keepAlive` — контроллер кешируется в `ModuleRetainer` и может переживать unmount (табы, NestedNavigators). Освобождается через `ModuleRetainer.evict(key)` или после перезапуска приложения.
+- `strict` — жёсткая стратегия. Модуль уничтожается при первом `dispose` виджета.
+
+```dart
+ModuleScope(
+  module: HomeModule(),
+  retentionPolicy: ModuleRetentionPolicy.routeBound,
+  retentionKey: routeName, // опционально. По умолчанию генерируется автоматически.
+  child: HomePage(),
+);
+```
+
+Для `routeBound` по-прежнему необходимо подключить `Modularity.observer`:
 
 ```dart
 // main.dart
@@ -164,10 +178,10 @@ MaterialApp(
 );
 ```
 
-- **Push:** Модуль создается.
-- **Cover (Push over):** Модуль жив (так как экран в стеке).
-- **Pop:** Модуль уничтожается (dispose).
-- **Fallback:** Если observer не подключен, модуль уничтожается при unmount виджета (Strict Strategy).
+- **Push:** создаёт модуль и подписывает на route observer.
+- **Cover (Push over):** модуль остаётся в памяти (роут ещё в стеке).
+- **Pop:** стратегия `routeBound` вызывает `dispose`, модуль удаляется из ретейнера.
+- **Unmount без роут-ивентов:** fallback к `strict`, чтобы не допустить утечек.
 
 ## **7. Testing Strategy**
 

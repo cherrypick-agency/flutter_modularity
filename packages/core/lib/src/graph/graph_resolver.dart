@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:modularity_contracts/modularity_contracts.dart';
 import '../engine/module_controller.dart';
+import '../engine/module_override_scope.dart';
 
 /// Сервис для разрешения зависимостей модуля (Imports).
 /// Отвечает за поиск, создание и инициализацию импортируемых модулей.
@@ -13,6 +14,7 @@ class GraphResolver {
     BinderFactory binderFactory, {
     Set<Type>? resolutionStack,
     List<ModuleInterceptor> interceptors = const [],
+    ModuleOverrideScope? overrideScope,
   }) async {
     final currentStack = resolutionStack ?? {module.runtimeType};
 
@@ -34,9 +36,11 @@ class GraphResolver {
       ModuleController? controller = registry[type];
 
       if (controller == null) {
+        final childScope = overrideScope?.childFor(type);
         controller = ModuleController(
           importModule,
           binderFactory: binderFactory,
+          overrideScopeTree: childScope,
           interceptors: interceptors,
         );
         registry[type] = controller;

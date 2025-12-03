@@ -1,5 +1,6 @@
 import 'package:test/test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:modularity_contracts/modularity_contracts.dart';
 import 'package:modularity_get_it/modularity_get_it.dart';
 
 void main() {
@@ -50,6 +51,31 @@ void main() {
       expect(GetIt.instance.isRegistered<String>(), isFalse);
       // 'int' should stay
       expect(GetIt.instance.isRegistered<int>(), isTrue);
+    });
+
+    test('preserve strategy keeps existing singleton instances', () {
+      final binder = GetItBinder();
+      binder.registerLazySingleton<String>(() => 'v1');
+      final first = binder.get<String>();
+
+      binder.runWithStrategy(RegistrationStrategy.preserveExisting, () {
+        binder.registerLazySingleton<String>(() => 'v2');
+      });
+
+      final second = binder.get<String>();
+      expect(second, same(first));
+    });
+
+    test('preserve strategy updates factory delegates', () {
+      final binder = GetItBinder();
+      binder.registerFactory<int>(() => 1);
+      expect(binder.get<int>(), equals(1));
+
+      binder.runWithStrategy(RegistrationStrategy.preserveExisting, () {
+        binder.registerFactory<int>(() => 2);
+      });
+
+      expect(binder.get<int>(), equals(2));
     });
   });
 }

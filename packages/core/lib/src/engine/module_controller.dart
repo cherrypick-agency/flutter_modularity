@@ -3,6 +3,7 @@ import 'package:modularity_contracts/modularity_contracts.dart';
 import '../graph/graph_resolver.dart';
 import '../di/simple_binder_factory.dart';
 import '../di/simple_binder.dart';
+import 'module_override_scope.dart';
 
 /// Контроллер, управляющий жизненным циклом одного модуля.
 class ModuleController {
@@ -11,6 +12,7 @@ class ModuleController {
   final BinderFactory _binderFactory; // Храним для создания импортов
   final StreamController<ModuleStatus> _statusController;
   final void Function(Binder)? overrides;
+  final ModuleOverrideScope? overrideScope;
   final List<ModuleInterceptor> interceptors;
 
   /// Ссылка на контроллеры импортируемых модулей.
@@ -21,16 +23,26 @@ class ModuleController {
     Binder? binder,
     BinderFactory? binderFactory,
     this.overrides,
+    ModuleOverrideScope? overrideScopeTree,
     this.interceptors = const [],
   })  : _statusController = StreamController<ModuleStatus>.broadcast(),
         binder = binder ?? (binderFactory ?? SimpleBinderFactory()).create(),
-        _binderFactory = binderFactory ?? SimpleBinderFactory() {
+        _binderFactory = binderFactory ?? SimpleBinderFactory(),
+        overrideScope = overrideScopeTree?.withAdditionalOverride(overrides) ??
+            (overrides != null
+                ? ModuleOverrideScope(selfOverrides: overrides)
+                : overrideScopeTree) {
     _statusController.add(ModuleStatus.initial);
   }
 
   Stream<ModuleStatus> get status => _statusController.stream;
   ModuleStatus _currentStatus = ModuleStatus.initial;
   ModuleStatus get currentStatus => _currentStatus;
+
+  RegistrationAwareBinder? get _registrationAwareBinder =>
+      binder is RegistrationAwareBinder
+          ? binder as RegistrationAwareBinder
+          : null;
 
   Object? _lastError;
   Object? get lastError => _lastError;
@@ -74,6 +86,7 @@ class ModuleController {
         _binderFactory,
         resolutionStack: resolutionStack,
         interceptors: interceptors,
+        overrideScope: overrideScope,
       );
 
       importedControllers.addAll(imports);
@@ -101,10 +114,7 @@ class ModuleController {
       exportable?.disableExportMode();
       module.binds(binder);
 
-      // Apply Overrides (Test)
-      if (overrides != null) {
-        overrides!(binder);
-      }
+      _applyOverridesIfNeeded();
 
       exportable?.enableExportMode();
       module.exports(binder);
@@ -139,15 +149,30 @@ class ModuleController {
     // Для MVP мы просто вызываем хук и перезаписываем.
     // В будущем SimpleBinder должен поддерживать "updateFactoryOnly".
 
-    final exportable =
-        binder is ExportableBinder ? binder as ExportableBinder : null;
-    exportable?.resetPublicScope();
-    exportable?.disableExportMode();
-    module.binds(binder);
-    exportable?.enableExportMode();
-    module.exports(binder);
-    exportable?.disableExportMode();
-    exportable?.sealPublicScope();
+    void rebind() {
+      final exportable =
+          binder is ExportableBinder ? binder as ExportableBinder : null;
+      exportable?.resetPublicScope();
+      exportable?.disableExportMode();
+      module.binds(binder);
+      _applyOverridesIfNeeded();
+      exportable?.enableExportMode();
+      module.exports(binder);
+      exportable?.disableExportMode();
+      exportable?.sealPublicScope();
+    }
+
+    final aware = _registrationAwareBinder;
+    if (aware != null) {
+      aware.runWithStrategy(
+        RegistrationStrategy.preserveExisting,
+        () {
+          rebind();
+        },
+      );
+    } else {
+      rebind();
+    }
 
     // Хук пользователя
     module.hotReload(binder);
@@ -171,5 +196,10 @@ class ModuleController {
   void _updateStatus(ModuleStatus newStatus) {
     _currentStatus = newStatus;
     _statusController.add(newStatus);
+  }
+
+  void _applyOverridesIfNeeded() {
+    final scope = overrideScope;
+    scope?.selfOverrides?.call(binder);
   }
 }

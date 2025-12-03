@@ -36,3 +36,11 @@ class FeaturePage extends StatelessWidget {
   }
 }
 ```
+
+### Advanced ModuleScope options
+
+- `retentionPolicy` / `retentionKey` let you opt into `KeepAlive` or custom
+  retention strategies without wiring your own navigator hooks.
+- `overrideScope` allows you to pass a `ModuleOverrideScope` tree that only
+  affects the current module and its imports (useful for temporary test
+  overrides or dynamic feature flags).
