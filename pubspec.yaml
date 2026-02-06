@@ -14,7 +14,8 @@ workspace:
   - packages/modularity_test
   - packages/test_utils
   - packages/adapters/modularity_get_it
-  - packages/shared_modules/modularity_http_client
+  # TODO: вернуть когда abstract_http_client будет опубликован на pub.dev
+  # - packages/shared_modules/modularity_http_client
   - packages/flutter/example
   - packages/modularity_injectable/example
   - examples/complex_app
