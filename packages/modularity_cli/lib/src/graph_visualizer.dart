@@ -1,10 +1,11 @@
-import 'package:modularity_contracts/modularity_contracts.dart';
-import 'html_generator.dart';
-import 'g6_html_generator.dart';
-import 'browser_opener.dart';
-import 'module_bindings_analyzer.dart';
-import 'graph_data.dart';
 import 'package:meta/meta.dart';
+import 'package:modularity_contracts/modularity_contracts.dart';
+
+import 'browser_opener.dart';
+import 'g6_html_generator.dart';
+import 'graph_data.dart';
+import 'html_generator.dart';
+import 'module_bindings_analyzer.dart';
 
 /// Available visualization renderers.
 enum GraphRenderer {
@@ -15,6 +16,10 @@ enum GraphRenderer {
   g6,
 }
 
+/// Generate and display module dependency graphs in a browser.
+///
+/// Supports both static Graphviz DOT diagrams and interactive AntV G6
+/// visualizations through the [GraphRenderer] selection.
 class GraphVisualizer {
   /// Generates a dependency graph for the given [rootModule] and opens it in the browser.
   ///
@@ -60,34 +65,40 @@ class GraphVisualizer {
       final snapshot = analyzer.analyze(current);
       final nodeId = currentType.toString();
 
-      nodes.add(ModuleNode(
-        id: nodeId,
-        name: currentType.toString(),
-        isRoot: current == rootModule,
-        publicDependencies: snapshot.publicDependencies,
-        privateDependencies: snapshot.privateDependencies,
-        expects: snapshot.expects,
-        warnings: snapshot.warnings,
-      ));
+      nodes.add(
+        ModuleNode(
+          id: nodeId,
+          name: currentType.toString(),
+          isRoot: current == rootModule,
+          publicDependencies: snapshot.publicDependencies,
+          privateDependencies: snapshot.privateDependencies,
+          expects: snapshot.expects,
+          warnings: snapshot.warnings,
+        ),
+      );
 
       for (final imported in current.imports) {
         final importedType = imported.runtimeType;
-        edges.add(ModuleEdge(
-          source: nodeId,
-          target: importedType.toString(),
-          type: ModuleEdgeType.imports,
-        ));
+        edges.add(
+          ModuleEdge(
+            source: nodeId,
+            target: importedType.toString(),
+            type: ModuleEdgeType.imports,
+          ),
+        );
         queue.add(imported);
       }
 
       try {
         for (final submodule in current.submodules) {
           final submoduleType = submodule.runtimeType;
-          edges.add(ModuleEdge(
-            source: nodeId,
-            target: submoduleType.toString(),
-            type: ModuleEdgeType.owns,
-          ));
+          edges.add(
+            ModuleEdge(
+              source: nodeId,
+              target: submoduleType.toString(),
+              type: ModuleEdgeType.owns,
+            ),
+          );
           queue.add(submodule);
         }
       } catch (e) {
@@ -98,12 +109,14 @@ class GraphVisualizer {
     return ModuleGraphData(nodes: nodes, edges: edges);
   }
 
+  /// Generate a Graphviz DOT string representing the module tree of [rootModule].
   @visibleForTesting
   static String generateDot(Module rootModule) {
     final buffer = StringBuffer();
     buffer.writeln('digraph Modules {');
     buffer.writeln(
-        '  node [shape=box, style="filled,rounded", fillcolor="#e3f2fd", fontname="Arial", penwidth=1.5, color="#90caf9"];');
+      '  node [shape=box, style="filled,rounded", fillcolor="#e3f2fd", fontname="Arial", penwidth=1.5, color="#90caf9"];',
+    );
     buffer.writeln('  edge [fontname="Arial", fontsize=10];');
     buffer.writeln('  rankdir=TB;');
 
@@ -119,9 +132,7 @@ class GraphVisualizer {
       visited.add(currentType);
 
       final snapshot = analyzer.analyze(current);
-      final attributes = <String>[
-        'label=${_buildNodeLabel(snapshot)}',
-      ];
+      final attributes = <String>['label=${_buildNodeLabel(snapshot)}'];
 
       if (current == rootModule) {
         attributes.add('fillcolor="#bbdefb"');
@@ -134,7 +145,8 @@ class GraphVisualizer {
       for (final imported in current.imports) {
         final importedType = imported.runtimeType;
         buffer.writeln(
-            '  "$currentType" -> "$importedType" [style=dashed, color="#616161", label="imports"];');
+          '  "$currentType" -> "$importedType" [style=dashed, color="#616161", label="imports"];',
+        );
         queue.add(imported);
       }
 
@@ -142,7 +154,8 @@ class GraphVisualizer {
         for (final submodule in current.submodules) {
           final submoduleType = submodule.runtimeType;
           buffer.writeln(
-              '  "$currentType" -> "$submoduleType" [dir=back, arrowtail=diamond, color="#1565c0", penwidth=1.5, label="owns"];');
+            '  "$currentType" -> "$submoduleType" [dir=back, arrowtail=diamond, color="#1565c0", penwidth=1.5, label="owns"];',
+          );
           queue.add(submodule);
         }
       } catch (e) {
@@ -165,39 +178,47 @@ class GraphVisualizer {
 
     final content = StringBuffer()
       ..writeln(
-          '<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">')
+        '<TABLE BORDER="0" CELLBORDER="0" CELLPADDING="2" CELLSPACING="0">',
+      )
       ..writeln('<TR><TD><B>$moduleName</B></TD></TR>');
 
     if (snapshot.publicDependencies.isNotEmpty) {
       content.writeln(
-          '<TR><TD ALIGN="left"><FONT POINT-SIZE="10">Public</FONT></TD></TR>');
+        '<TR><TD ALIGN="left"><FONT POINT-SIZE="10">Public</FONT></TD></TR>',
+      );
       for (final dep in snapshot.publicDependencies) {
         content.writeln(
-            '<TR><TD ALIGN="left"><FONT POINT-SIZE="9">- ${_escapeHtml(dep.displayName)}</FONT></TD></TR>');
+          '<TR><TD ALIGN="left"><FONT POINT-SIZE="9">- ${_escapeHtml(dep.displayName)}</FONT></TD></TR>',
+        );
       }
     }
 
     if (snapshot.privateDependencies.isNotEmpty) {
       content.writeln(
-          '<TR><TD ALIGN="left"><FONT POINT-SIZE="10">Private</FONT></TD></TR>');
+        '<TR><TD ALIGN="left"><FONT POINT-SIZE="10">Private</FONT></TD></TR>',
+      );
       for (final dep in snapshot.privateDependencies) {
         content.writeln(
-            '<TR><TD ALIGN="left"><FONT POINT-SIZE="9">- ${_escapeHtml(dep.displayName)}</FONT></TD></TR>');
+          '<TR><TD ALIGN="left"><FONT POINT-SIZE="9">- ${_escapeHtml(dep.displayName)}</FONT></TD></TR>',
+        );
       }
     }
 
     if (snapshot.expects.isNotEmpty) {
       content.writeln(
-          '<TR><TD ALIGN="left"><FONT POINT-SIZE="10" COLOR="#ff8f00">Expects</FONT></TD></TR>');
+        '<TR><TD ALIGN="left"><FONT POINT-SIZE="10" COLOR="#ff8f00">Expects</FONT></TD></TR>',
+      );
       for (final type in snapshot.expects) {
         content.writeln(
-            '<TR><TD ALIGN="left"><FONT POINT-SIZE="9" COLOR="#ff8f00">- ${_escapeHtml(type.toString())}</FONT></TD></TR>');
+          '<TR><TD ALIGN="left"><FONT POINT-SIZE="9" COLOR="#ff8f00">- ${_escapeHtml(type.toString())}</FONT></TD></TR>',
+        );
       }
     }
 
     if (snapshot.warnings.isNotEmpty) {
       content.writeln(
-          '<TR><TD ALIGN="left"><FONT POINT-SIZE="8" COLOR="#c62828">Warnings during analysis (see console)</FONT></TD></TR>');
+        '<TR><TD ALIGN="left"><FONT POINT-SIZE="8" COLOR="#c62828">Warnings during analysis (see console)</FONT></TD></TR>',
+      );
     }
 
     content.writeln('</TABLE>');

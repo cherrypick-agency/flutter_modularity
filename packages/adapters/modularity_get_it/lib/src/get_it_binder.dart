@@ -2,7 +2,19 @@ import 'dart:async';
 import 'package:get_it/get_it.dart';
 import 'package:modularity_contracts/modularity_contracts.dart';
 
+/// [Binder] implementation backed by a scoped [GetIt] instance.
+///
+/// Supports export mode, registration strategy switching via
+/// [RegistrationAwareBinder], and automatic cleanup of globally
+/// registered types.
 class GetItBinder implements ExportableBinder, RegistrationAwareBinder {
+  /// Create a binder optionally linked to a [_parent] scope.
+  ///
+  /// When [_useGlobalInstance] is `true`, the global [GetIt.instance] is
+  /// used instead of a fresh isolated container.
+  GetItBinder([this._parent, this._useGlobalInstance = false]) {
+    _getIt = _useGlobalInstance ? GetIt.instance : GetIt.asNewInstance();
+  }
   late final GetIt _getIt;
   final bool _useGlobalInstance;
   final List<FutureOr<void> Function()> _cleanupCallbacks = [];
@@ -14,14 +26,10 @@ class GetItBinder implements ExportableBinder, RegistrationAwareBinder {
   bool _isExportMode = false;
   bool _publicSealed = false;
   final List<RegistrationStrategy> _strategyStack = [
-    RegistrationStrategy.replace
+    RegistrationStrategy.replace,
   ];
   final Map<Type, Object Function()> _factoryDelegates = {};
   final Map<Type, Object Function()> _lazySingletonDelegates = {};
-
-  GetItBinder([this._parent, this._useGlobalInstance = false]) {
-    _getIt = _useGlobalInstance ? GetIt.instance : GetIt.asNewInstance();
-  }
 
   @override
   void enableExportMode() => _isExportMode = true;
@@ -89,7 +97,10 @@ class GetItBinder implements ExportableBinder, RegistrationAwareBinder {
     _getIt.registerLazySingleton<T>(() {
       final creator = _lazySingletonDelegates[T] as T Function()?;
       if (creator == null) {
-        throw StateError('Factory for $T is not registered.');
+        throw DependencyNotFoundException(
+          'Factory for $T is not registered.',
+          requestedType: T,
+        );
       }
       return creator();
     });
@@ -115,7 +126,10 @@ class GetItBinder implements ExportableBinder, RegistrationAwareBinder {
     _getIt.registerFactory<T>(() {
       final creator = _factoryDelegates[T] as T Function()?;
       if (creator == null) {
-        throw StateError('Factory for $T is not registered.');
+        throw DependencyNotFoundException(
+          'Factory for $T is not registered.',
+          requestedType: T,
+        );
       }
       return creator();
     });
@@ -151,7 +165,11 @@ class GetItBinder implements ExportableBinder, RegistrationAwareBinder {
   T get<T extends Object>() {
     final object = tryGet<T>();
     if (object == null) {
-      throw Exception('Dependency of type $T not found in GetItBinder scope.');
+      throw DependencyNotFoundException(
+        'Dependency of type $T not found in GetItBinder scope.',
+        requestedType: T,
+        lookupContext: 'GetItBinder scope',
+      );
     }
     return object;
   }
@@ -160,7 +178,11 @@ class GetItBinder implements ExportableBinder, RegistrationAwareBinder {
   T parent<T extends Object>() {
     final object = tryParent<T>();
     if (object == null) {
-      throw Exception('Dependency of type $T not found in parent scope.');
+      throw DependencyNotFoundException(
+        'Dependency of type $T not found in parent scope.',
+        requestedType: T,
+        lookupContext: 'parent scope',
+      );
     }
     return object;
   }
@@ -219,6 +241,10 @@ class GetItBinder implements ExportableBinder, RegistrationAwareBinder {
     }
   }
 
+  /// Reset all registrations and clear internal tracking state.
+  ///
+  /// When using the global [GetIt] instance, only types registered through
+  /// this binder are unregistered; otherwise the entire container is reset.
   Future<void> reset() async {
     if (_useGlobalInstance) {
       for (final callback in _cleanupCallbacks.reversed) {
@@ -237,10 +263,7 @@ class GetItBinder implements ExportableBinder, RegistrationAwareBinder {
   RegistrationStrategy get registrationStrategy => _strategyStack.last;
 
   @override
-  T runWithStrategy<T>(
-    RegistrationStrategy strategy,
-    T Function() body,
-  ) {
+  T runWithStrategy<T>(RegistrationStrategy strategy, T Function() body) {
     _strategyStack.add(strategy);
     try {
       return body();
@@ -251,7 +274,7 @@ class GetItBinder implements ExportableBinder, RegistrationAwareBinder {
 
   void _assertCanExport() {
     if (_isExportMode && _publicSealed) {
-      throw StateError(
+      throw ModuleConfigurationException(
         'Public scope is sealed. Call resetPublicScope() before registering new exports.',
       );
     }

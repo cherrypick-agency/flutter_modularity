@@ -1,3 +1,8 @@
+## 0.1.1
+
+- Added `BinderGetIt` proxy to resolve dependencies through Modularity rules (local/imports/parent) from inside injectable-generated factories.
+- Updated `ModularityInjectableBridge` to use `BinderGetIt` for both internal and export configuration.
+
 ## 0.1.0
 
 - Updated dependencies to modularity_contracts ^0.1.0 and modularity_core ^0.1.0.

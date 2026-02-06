@@ -12,9 +12,10 @@ mixin _$AuthStore on _AuthStore, Store {
   Computed<bool>? _$isLoggedInComputed;
 
   @override
-  bool get isLoggedIn => (_$isLoggedInComputed ??=
-          Computed<bool>(() => super.isLoggedIn, name: '_AuthStore.isLoggedIn'))
-      .value;
+  bool get isLoggedIn => (_$isLoggedInComputed ??= Computed<bool>(
+    () => super.isLoggedIn,
+    name: '_AuthStore.isLoggedIn',
+  )).value;
 
   late final _$userAtom = Atom(name: '_AuthStore.user', context: context);
 
@@ -31,8 +32,10 @@ mixin _$AuthStore on _AuthStore, Store {
     });
   }
 
-  late final _$isLoadingAtom =
-      Atom(name: '_AuthStore.isLoading', context: context);
+  late final _$isLoadingAtom = Atom(
+    name: '_AuthStore.isLoading',
+    context: context,
+  );
 
   @override
   bool get isLoading {
@@ -47,8 +50,10 @@ mixin _$AuthStore on _AuthStore, Store {
     });
   }
 
-  late final _$errorMessageAtom =
-      Atom(name: '_AuthStore.errorMessage', context: context);
+  late final _$errorMessageAtom = Atom(
+    name: '_AuthStore.errorMessage',
+    context: context,
+  );
 
   @override
   String? get errorMessage {
@@ -63,21 +68,26 @@ mixin _$AuthStore on _AuthStore, Store {
     });
   }
 
-  late final _$loginAsyncAction =
-      AsyncAction('_AuthStore.login', context: context);
+  late final _$loginAsyncAction = AsyncAction(
+    '_AuthStore.login',
+    context: context,
+  );
 
   @override
   Future<void> login(String username, String password) {
     return _$loginAsyncAction.run(() => super.login(username, password));
   }
 
-  late final _$_AuthStoreActionController =
-      ActionController(name: '_AuthStore', context: context);
+  late final _$_AuthStoreActionController = ActionController(
+    name: '_AuthStore',
+    context: context,
+  );
 
   @override
   void logout() {
-    final _$actionInfo =
-        _$_AuthStoreActionController.startAction(name: '_AuthStore.logout');
+    final _$actionInfo = _$_AuthStoreActionController.startAction(
+      name: '_AuthStore.logout',
+    );
     try {
       return super.logout();
     } finally {

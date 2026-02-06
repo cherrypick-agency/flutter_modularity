@@ -6,19 +6,19 @@ import 'package:modularity_flutter/modularity_flutter.dart';
 // SCENARIO 1: DIAMOND DEPENDENCY (Shared State)
 // -----------------------------------------------------------------------------
 class SharedService {
+  SharedService() : id = ++instanceCount;
   static int instanceCount = 0;
   final int id;
-  SharedService() : id = ++instanceCount;
 }
 
 class ServiceA {
-  final SharedService shared;
   ServiceA(this.shared);
+  final SharedService shared;
 }
 
 class ServiceB {
-  final SharedService shared;
   ServiceB(this.shared);
+  final SharedService shared;
 }
 
 class SharedModule extends Module {
@@ -69,7 +69,7 @@ class DiamondRootModule extends Module {
 // SCENARIO 2: DEEP SCOPE CHAINING (GrandParent -> Child)
 // -----------------------------------------------------------------------------
 class GrandData {
-  final String value = "GrandSecret";
+  final String value = 'GrandSecret';
 }
 
 class GrandParentModule extends Module {
@@ -106,7 +106,7 @@ class FlakyModule extends Module {
   Future<void> onInit() async {
     attempts++;
     if (attempts == 1) {
-      throw Exception("Init Failed");
+      throw Exception('Init Failed');
     }
     // Add delay to ensure Loading state is visible in tests
     await Future.delayed(const Duration(milliseconds: 50));
@@ -117,10 +117,9 @@ class FlakyModule extends Module {
 // UI HELPERS
 // -----------------------------------------------------------------------------
 class TestPage extends StatelessWidget {
+  const TestPage(this.title, {this.onCheck});
   final String title;
   final VoidCallback? onCheck;
-
-  const TestPage(this.title, {this.onCheck});
 
   @override
   Widget build(BuildContext context) {
@@ -131,8 +130,9 @@ class TestPage extends StatelessWidget {
 
 void main() {
   group('Complex E2E Tests', () {
-    testWidgets('Diamond Dependency: Shared module is initialized ONCE',
-        (tester) async {
+    testWidgets('Diamond Dependency: Shared module is initialized ONCE', (
+      tester,
+    ) async {
       SharedService.instanceCount = 0;
 
       await tester.pumpWidget(
@@ -170,8 +170,9 @@ void main() {
       expect(find.text('Total Instances: 1'), findsOneWidget);
     });
 
-    testWidgets('Scope Chaining: Child finds GrandParent dependency',
-        (tester) async {
+    testWidgets('Scope Chaining: Child finds GrandParent dependency', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         ModularityRoot(
           child: MaterialApp(
@@ -200,8 +201,9 @@ void main() {
       expect(find.text('GrandSecret'), findsOneWidget);
     });
 
-    testWidgets('Error Recovery: Retry logic works in ModuleScope',
-        (tester) async {
+    testWidgets('Error Recovery: Retry logic works in ModuleScope', (
+      tester,
+    ) async {
       FlakyModule.attempts = 0;
 
       await tester.pumpWidget(

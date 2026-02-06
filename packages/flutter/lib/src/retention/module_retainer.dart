@@ -10,6 +10,7 @@ import '../modularity.dart';
 /// Provides visibility into the retention cache state without exposing
 /// mutable internal state.
 class ModuleRetainerEntrySnapshot {
+  /// Create a snapshot of a retained module entry.
   ModuleRetainerEntrySnapshot({
     required this.key,
     required this.policy,
@@ -18,10 +19,19 @@ class ModuleRetainerEntrySnapshot {
     required this.moduleType,
   });
 
+  /// Retention cache key that uniquely identifies this entry.
   final Object key;
+
+  /// Retention policy governing the lifecycle of the cached controller.
   final ModuleRetentionPolicy policy;
+
+  /// Number of active references currently holding this entry alive.
   final int refCount;
+
+  /// Timestamp of the most recent [acquire] or [register] call for this entry.
   final DateTime lastAccessed;
+
+  /// Runtime type of the [Module] associated with the cached controller.
   final Type moduleType;
 }
 
@@ -33,12 +43,9 @@ class _ModuleRetainerEntry {
     ModalRoute<dynamic>? route,
     FutureOr<void> Function()? onRouteTerminated,
     int refCount = 0,
-  })  : refCount = refCount,
-        moduleType = controller.module.runtimeType {
-    attachRoute(
-      route: route,
-      onRouteTerminated: onRouteTerminated,
-    );
+  }) : refCount = refCount,
+       moduleType = controller.module.runtimeType {
+    attachRoute(route: route, onRouteTerminated: onRouteTerminated);
   }
 
   final ModuleController controller;
@@ -139,10 +146,15 @@ class _ModuleRetainerEntry {
 class ModuleRetainer {
   final Map<Object, _ModuleRetainerEntry> _entries = {};
 
+  /// Return whether a controller with the given [key] exists in the cache.
   bool contains(Object key) => _entries.containsKey(key);
 
+  /// Return the cached [ModuleController] for [key] without incrementing the
+  /// reference count, or `null` if no entry exists.
   ModuleController? peek(Object key) => _entries[key]?.controller;
 
+  /// Return the cached [ModuleController] for [key] and increment its
+  /// reference count, or `null` if no entry exists.
   ModuleController? acquire(Object key) {
     final entry = _entries[key];
     if (entry == null) return null;
@@ -157,6 +169,11 @@ class ModuleRetainer {
     return entry.controller;
   }
 
+  /// Register a [ModuleController] in the cache under [key].
+  ///
+  /// Throw [ModuleLifecycleException] if [key] is already registered.
+  /// Optionally attach a [route] so the entry is automatically evicted when
+  /// the route is popped, invoking [onRouteTerminated] as a callback.
   void register({
     required Object key,
     required ModuleController controller,
@@ -166,9 +183,10 @@ class ModuleRetainer {
     FutureOr<void> Function()? onRouteTerminated,
   }) {
     if (_entries.containsKey(key)) {
-      throw StateError(
+      throw ModuleLifecycleException(
         'Retention key "$key" is already registered. '
         'Call release/evict before registering again.',
+        moduleType: controller.module.runtimeType,
       );
     }
     final entry = _ModuleRetainerEntry(
@@ -192,10 +210,11 @@ class ModuleRetainer {
     );
   }
 
-  Future<void> release(
-    Object key, {
-    bool disposeIfOrphaned = false,
-  }) async {
+  /// Decrement the reference count for [key].
+  ///
+  /// If [disposeIfOrphaned] is `true` and the reference count drops to zero,
+  /// remove the entry and dispose its [ModuleController].
+  Future<void> release(Object key, {bool disposeIfOrphaned = false}) async {
     final entry = _entries[key];
     if (entry == null) return;
     if (entry.refCount > 0) {
@@ -207,7 +226,7 @@ class ModuleRetainer {
       retentionKey: key,
       details: {
         'refCount': entry.refCount,
-        'disposeIfOrphaned': disposeIfOrphaned
+        'disposeIfOrphaned': disposeIfOrphaned,
       },
     );
     if (disposeIfOrphaned && entry.refCount <= 0) {
@@ -222,6 +241,10 @@ class ModuleRetainer {
     }
   }
 
+  /// Remove the entry for [key] from the cache regardless of reference count.
+  ///
+  /// When [disposeController] is `true` (the default), the underlying
+  /// [ModuleController] is disposed after removal.
   Future<void> evict(Object key, {bool disposeController = true}) async {
     final entry = _entries.remove(key);
     if (entry == null) return;
@@ -242,6 +265,8 @@ class ModuleRetainer {
     }
   }
 
+  /// Return a list of [ModuleRetainerEntrySnapshot] instances reflecting the
+  /// current cache state, intended for debugging and testing.
   List<ModuleRetainerEntrySnapshot> debugSnapshot() {
     return _entries.entries
         .map(

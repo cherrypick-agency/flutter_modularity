@@ -37,8 +37,9 @@ void main() {
       final rootNode = data.nodes.firstWhere((n) => n.name == 'RootModule');
       expect(rootNode.isRoot, isTrue);
 
-      final featureNode =
-          data.nodes.firstWhere((n) => n.name == 'FeatureModule');
+      final featureNode = data.nodes.firstWhere(
+        (n) => n.name == 'FeatureModule',
+      );
       expect(featureNode.isRoot, isFalse);
       expect(featureNode.publicDependencies, hasLength(1));
       expect(featureNode.privateDependencies, hasLength(1));

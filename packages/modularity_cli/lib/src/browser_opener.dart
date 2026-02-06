@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:path/path.dart' as path;
 
+/// Write HTML content to a temporary file and open it in the default browser.
 class BrowserOpener {
+  /// Write [htmlContent] to a temp file and launch the platform browser.
   static Future<void> openHtml(String htmlContent) async {
     final tempDir = Directory.systemTemp.createTempSync('modularity_graph_');
     final file = File(path.join(tempDir.path, 'graph.html'));
@@ -19,7 +21,8 @@ class BrowserOpener {
       await Process.run('xdg-open', [filePath]);
     } else {
       print(
-          'Could not open browser automatically. Please open the file manually.');
+        'Could not open browser automatically. Please open the file manually.',
+      );
     }
   }
 }

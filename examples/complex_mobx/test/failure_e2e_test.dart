@@ -13,14 +13,15 @@ class FailingModule extends Module {
     attempts++;
     // Fail first 2 times
     if (attempts <= 2) {
-      throw Exception("Network Error");
+      throw Exception('Network Error');
     }
   }
 }
 
 void main() {
-  testWidgets('E2E Failure Scenario: Module Failure -> Retry -> Success',
-      (tester) async {
+  testWidgets('E2E Failure Scenario: Module Failure -> Retry -> Success', (
+    tester,
+  ) async {
     FailingModule.attempts = 0;
 
     await tester.pumpWidget(
@@ -37,7 +38,8 @@ void main() {
     // 1. First Load -> Error
     await tester.pump(); // Start init
     await tester.pump(
-        const Duration(milliseconds: 100)); // Allow Future to complete/fail
+      const Duration(milliseconds: 100),
+    ); // Allow Future to complete/fail
 
     expect(find.text('Module Init Failed'), findsOneWidget);
     expect(find.text('Exception: Network Error'), findsOneWidget);

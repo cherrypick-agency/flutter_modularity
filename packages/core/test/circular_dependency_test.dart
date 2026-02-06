@@ -1,5 +1,5 @@
-import 'package:test/test.dart';
 import 'package:modularity_core/modularity_core.dart';
+import 'package:test/test.dart';
 
 class ModuleA extends Module {
   @override
@@ -32,8 +32,7 @@ void main() {
 
       expect(
         () => controller.initialize(<ModuleRegistryKey, ModuleController>{}),
-        throwsA(predicate(
-            (e) => e.toString().contains('Circular dependency detected'))),
+        throwsA(isA<CircularDependencyException>()),
       );
     });
 
@@ -42,8 +41,7 @@ void main() {
 
       expect(
         () => controller.initialize(<ModuleRegistryKey, ModuleController>{}),
-        throwsA(predicate(
-            (e) => e.toString().contains('Circular dependency detected'))),
+        throwsA(isA<CircularDependencyException>()),
       );
     });
   });

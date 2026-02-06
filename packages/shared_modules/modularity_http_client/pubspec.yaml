@@ -1,0 +1,20 @@
+name: modularity_http_client
+description: HTTP Client module for Modularity framework with named clients support
+version: 0.1.0
+publish_to: none
+repository: https://github.com/cherrypick-agency/modularity_dart
+
+environment:
+  sdk: ">=3.9.0 <4.0.0"
+
+resolution: workspace
+
+dependencies:
+  modularity_contracts:
+    path: ../../contracts
+  abstract_http_client:
+    path: /Users/belief/dev/projects/http_client/packages/abstract_http_client
+
+dev_dependencies:
+  test: ^1.25.8
+  mocktail: ^1.0.4

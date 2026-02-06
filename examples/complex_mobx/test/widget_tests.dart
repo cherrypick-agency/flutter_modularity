@@ -12,8 +12,9 @@ void main() {
   group('Complex MobX Widget Tests', () {
     // Simplified test: We just verify that IF the store has an error, the UI shows it.
     // We set the error BEFORE pumping the widget. This avoids race conditions with reactive updates in test environment.
-    testWidgets('LoginPage displays error message on invalid credentials',
-        (tester) async {
+    testWidgets('LoginPage displays error message on invalid credentials', (
+      tester,
+    ) async {
       final authStore = AuthStore();
 
       // Pre-set state

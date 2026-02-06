@@ -4,8 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:modularity_flutter/modularity_flutter.dart';
 
 void main() {
-  testWidgets('Riverpod Example: Overrides work and State updates',
-      (tester) async {
+  testWidgets('Riverpod Example: Overrides work and State updates', (
+    tester,
+  ) async {
     // 1. Load App
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();

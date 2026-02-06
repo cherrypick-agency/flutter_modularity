@@ -6,11 +6,19 @@ import 'package:modularity_core/modularity_core.dart';
 import '../modularity.dart';
 import 'module_retainer.dart';
 
+/// Signature for a function that returns the current [ModuleController], or
+/// `null` if none is attached.
 typedef ControllerGetter = ModuleController? Function();
-typedef ControllerRelease = Future<void> Function(
-    {required bool disposeController});
 
+/// Signature for a function that releases (and optionally disposes) the
+/// current [ModuleController].
+typedef ControllerRelease =
+    Future<void> Function({required bool disposeController});
+
+/// Binding object that connects a [ModuleRetentionStrategy] to the widget
+/// tree, the [ModuleRetainer] cache, and the active [ModuleController].
 class ModuleRetentionBinding {
+  /// Create a retention binding with all required dependencies.
   ModuleRetentionBinding({
     required this.context,
     required this.module,
@@ -22,35 +30,70 @@ class ModuleRetentionBinding {
     RouteObserver<ModalRoute>? observer,
   });
 
+  /// Build context of the owning [ModuleScope] widget.
   final BuildContext context;
+
+  /// Module instance whose lifecycle is being managed.
   final Module module;
+
+  /// Cache key used for [ModuleRetainer] lookups.
   final Object retentionKey;
+
+  /// Shared [ModuleRetainer] instance that caches controllers across scopes.
   final ModuleRetainer retainer;
+
+  /// Callback that returns the current [ModuleController] held by the scope.
   final ControllerGetter controllerGetter;
+
+  /// Callback that releases (and optionally disposes) the active controller.
   final ControllerRelease releaseController;
+
+  /// Modal route that owns the current scope, or `null` when outside a route.
   final ModalRoute<dynamic>? route;
+
+  /// Return the global [RouteObserver] registered with [Modularity].
   RouteObserver<ModalRoute> get observer => Modularity.observer;
 }
 
+/// Base class for module retention strategies that govern when a
+/// [ModuleController] is reused, created, and disposed.
+///
+/// Each concrete subclass corresponds to one [ModuleRetentionPolicy] value.
 abstract class ModuleRetentionStrategy {
+  /// Create a strategy bound to the given [binding].
   ModuleRetentionStrategy(this.binding);
 
+  /// Binding that provides access to the widget tree, retainer, and controller.
   final ModuleRetentionBinding binding;
 
+  /// Return an existing [ModuleController] from the cache, or `null` to
+  /// signal that a new controller must be created.
   ModuleController? reuseExisting();
 
+  /// Handle post-creation bookkeeping for a newly created [controller].
   void onControllerCreated(ModuleController controller);
 
+  /// Release or dispose the controller when the owning [State] is disposed.
   Future<void> onStateDispose();
 
+  /// Dispose the controller immediately, bypassing normal lifecycle rules.
   Future<void> disposeNow();
 
+  /// Reset state and release the controller so a fresh one can be created on
+  /// the next build cycle (used after an initialization error).
   Future<void> onRetry();
 
+  /// Respond to dependency changes in the widget tree (called from
+  /// [State.didChangeDependencies]).
   void didChangeDependencies();
 }
 
+/// Retention strategy for [ModuleRetentionPolicy.strict].
+///
+/// Dispose the [ModuleController] on every widget unmount; never reuse a
+/// cached instance.
 class StrictRetentionStrategy extends ModuleRetentionStrategy {
+  /// Create a strict retention strategy for the given [binding].
   StrictRetentionStrategy(super.binding);
 
   @override
@@ -74,7 +117,13 @@ class StrictRetentionStrategy extends ModuleRetentionStrategy {
       binding.releaseController(disposeController: true);
 }
 
+/// Retention strategy for [ModuleRetentionPolicy.keepAlive].
+///
+/// Cache the [ModuleController] in [ModuleRetainer] so it survives widget
+/// unmounts. The controller is evicted when its route terminates or when
+/// explicitly evicted from the retainer.
 class KeepAliveRetentionStrategy extends ModuleRetentionStrategy {
+  /// Create a keep-alive retention strategy for the given [binding].
   KeepAliveRetentionStrategy(super.binding);
 
   bool _registered = false;
@@ -150,8 +199,10 @@ class KeepAliveRetentionStrategy extends ModuleRetentionStrategy {
       return;
     }
     await binding.releaseController(disposeController: false);
-    await binding.retainer
-        .evict(binding.retentionKey, disposeController: false);
+    await binding.retainer.evict(
+      binding.retentionKey,
+      disposeController: false,
+    );
     _registered = false;
     _released = true;
     _routeTerminationHandled = true;
@@ -164,8 +215,13 @@ class KeepAliveRetentionStrategy extends ModuleRetentionStrategy {
   }
 }
 
+/// Retention strategy for [ModuleRetentionPolicy.routeBound].
+///
+/// Subscribe to the enclosing [ModalRoute] via [RouteAware] and dispose the
+/// [ModuleController] when the route is popped or removed from the navigator.
 class RouteBoundRetentionStrategy extends ModuleRetentionStrategy
     with RouteAware {
+  /// Create a route-bound retention strategy for the given [binding].
   RouteBoundRetentionStrategy(super.binding);
 
   ModalRoute? _route;
@@ -214,17 +270,20 @@ class RouteBoundRetentionStrategy extends ModuleRetentionStrategy
     }
   }
 
+  /// Dispose the controller when the route is popped off the navigator.
   @override
   void didPop() {
     disposeNow();
   }
 
-  /// Called when the route is removed without popping.
+  /// Dispose the controller when the route is removed without popping.
   void didRemove() {
     disposeNow();
   }
 }
 
+/// Create the appropriate [ModuleRetentionStrategy] for the given [policy]
+/// and [binding].
 ModuleRetentionStrategy buildStrategy(
   ModuleRetentionPolicy policy,
   ModuleRetentionBinding binding,

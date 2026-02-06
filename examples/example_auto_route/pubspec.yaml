@@ -4,7 +4,9 @@ publish_to: 'none'
 version: 0.0.1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
+
+resolution: workspace
 
 dependencies:
   flutter:
@@ -19,6 +21,9 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   build_runner: ^2.4.8
   auto_route_generator: ^9.0.0
+
+
+
 
 
 

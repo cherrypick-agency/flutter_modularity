@@ -3,20 +3,19 @@ import 'package:modularity_contracts/modularity_contracts.dart';
 enum _DependencyType { factory, singleton, instance }
 
 class _Registration {
+  _Registration({required this.type, required this.factory, this.instance});
   final _DependencyType type;
   Object Function() factory;
   Object? instance;
-
-  _Registration({
-    required this.type,
-    required this.factory,
-    this.instance,
-  });
 }
 
 /// Простая реализация Binder на основе Map.
 /// Поддерживает разделение на Public (Exports) и Private (Binds) зависимости.
 class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
+  /// Create a [SimpleBinder] with optional imported [Binder] list and parent scope.
+  SimpleBinder({List<Binder> imports = const [], Binder? parent})
+    : _imports = imports.toList(),
+      _parent = parent;
   final Map<Type, _Registration> _privateRegistrations = {};
   final Map<Type, _Registration> _publicRegistrations = {};
 
@@ -34,15 +33,10 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
   bool _publicSealed = false;
 
   final List<RegistrationStrategy> _strategyStack = [
-    RegistrationStrategy.replace
+    RegistrationStrategy.replace,
   ];
 
-  SimpleBinder({
-    List<Binder> imports = const [],
-    Binder? parent,
-  })  : _imports = imports.toList(),
-        _parent = parent;
-
+  /// Append the given [Binder] list to the set of imported scopes.
   @override
   void addImports(List<Binder> binders) {
     _imports.addAll(binders);
@@ -56,51 +50,60 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
   @override
   void disableExportMode() => _isExportMode = false;
 
+  /// Return `true` when registrations are directed to the public scope.
   @override
   bool get isExportModeEnabled => _isExportMode;
 
+  /// Return `true` when the public scope is sealed and rejects new registrations.
   @override
   bool get isPublicScopeSealed => _publicSealed;
 
+  /// Seal the public scope so that further export-mode registrations throw.
   @override
   void sealPublicScope() {
     _publicSealed = true;
   }
 
+  /// Unseal the public scope to allow re-registration (e.g. during hot reload).
   @override
   void resetPublicScope() {
     _publicSealed = false;
   }
 
+  /// Register a lazy singleton that is instantiated on first [get] call.
   @override
   void registerLazySingleton<T extends Object>(T Function() factory) {
-    _register<T>(_Registration(
-      type: _DependencyType.singleton,
-      factory: factory,
-    ));
+    _register<T>(
+      _Registration(type: _DependencyType.singleton, factory: factory),
+    );
   }
 
+  /// Register a factory that creates a new instance on every [get] call.
   @override
   void registerFactory<T extends Object>(T Function() factory) {
-    _register<T>(_Registration(
-      type: _DependencyType.factory,
-      factory: factory,
-    ));
+    _register<T>(
+      _Registration(type: _DependencyType.factory, factory: factory),
+    );
   }
 
+  /// Register an already-created instance as an eager singleton.
   @override
   void registerSingleton<T extends Object>(T instance) {
-    _register<T>(_Registration(
-      type: _DependencyType.instance,
-      factory: () => instance,
-      instance: instance,
-    ));
+    _register<T>(
+      _Registration(
+        type: _DependencyType.instance,
+        factory: () => instance,
+        instance: instance,
+      ),
+    );
   }
 
+  /// Shorthand alias for [registerLazySingleton].
   @override
   void singleton<T extends Object>(T Function() factory) =>
       registerLazySingleton(factory);
 
+  /// Shorthand alias for [registerFactory].
   @override
   void factory<T extends Object>(T Function() factory) =>
       registerFactory(factory);
@@ -112,7 +115,7 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
         registrationStrategy == RegistrationStrategy.preserveExisting;
 
     if (_isExportMode && _publicSealed) {
-      throw StateError(
+      throw ModuleConfigurationException(
         'Public scope is sealed. Call resetPublicScope() before registering new exports.',
       );
     }
@@ -121,7 +124,7 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
       if (_isExportMode &&
           !isPreserve &&
           registrationStrategy == RegistrationStrategy.replace) {
-        throw StateError(
+        throw ModuleConfigurationException(
           'Type $T is already exported in this module. Duplicate exports are not allowed.',
         );
       }
@@ -135,23 +138,29 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
     target[T] = reg;
   }
 
+  /// Resolve a dependency of type [T] or throw [DependencyNotFoundException].
+  ///
+  /// Lookup order: local private scope, local public scope, imports, parent.
   @override
   T get<T extends Object>() {
     final object = tryGet<T>();
     if (object == null) {
-      // DX Improvement: List available keys to help debugging
-      final available = [
-        ..._privateRegistrations.keys,
-        ..._publicRegistrations.keys
-      ].map((t) => t.toString()).join(', ');
-
-      throw Exception('Dependency of type $T not found.\n'
-          'Checked: Current Scope, Imports, Parent.\n'
-          'Available in Current Scope: [$available]');
+      throw DependencyNotFoundException(
+        'Dependency of type $T not found.\n'
+        'Checked: Current Scope, Imports, Parent.',
+        requestedType: T,
+        availableTypes: [
+          ..._privateRegistrations.keys,
+          ..._publicRegistrations.keys,
+        ],
+      );
     }
     return object;
   }
 
+  /// Try to resolve a dependency of type [T], returning `null` if not found.
+  ///
+  /// Searches local scope, then imports (public exports only), then parent.
   @override
   T? tryGet<T extends Object>() {
     // 1. Search locally (Private first, then Public)
@@ -181,20 +190,29 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
     return null;
   }
 
+  /// Resolve a dependency of type [T] from the parent scope or throw.
   @override
   T parent<T extends Object>() {
     final object = tryParent<T>();
     if (object == null) {
-      throw Exception('Dependency of type $T not found in parent scope.');
+      throw DependencyNotFoundException(
+        'Dependency of type $T not found in parent scope.',
+        requestedType: T,
+        lookupContext: 'parent scope',
+      );
     }
     return object;
   }
 
+  /// Try to resolve a dependency of type [T] from the parent scope.
   @override
   T? tryParent<T extends Object>() {
     return _parent?.tryGet<T>();
   }
 
+  /// Return `true` if [type] is registered in any reachable scope.
+  ///
+  /// Checks local registrations, imported public exports, and the parent chain.
   @override
   bool contains(Type type) {
     // 1. Local
@@ -228,6 +246,7 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
     return null;
   }
 
+  /// Return `true` if [type] is registered in the public (exported) scope.
   @override
   bool containsPublic(Type type) {
     return _publicRegistrations.containsKey(type);
@@ -239,9 +258,7 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
     }
 
     if (reg.type == _DependencyType.singleton) {
-      if (reg.instance == null) {
-        reg.instance = reg.factory();
-      }
+      reg.instance ??= reg.factory();
       return reg.instance as T;
     }
 
@@ -256,14 +273,14 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
     _publicSealed = false;
   }
 
+  /// Return the currently active [RegistrationStrategy].
   @override
   RegistrationStrategy get registrationStrategy => _strategyStack.last;
 
+  /// Execute [body] under the given [RegistrationStrategy], restoring the
+  /// previous strategy when [body] completes.
   @override
-  T runWithStrategy<T>(
-    RegistrationStrategy strategy,
-    T Function() body,
-  ) {
+  T runWithStrategy<T>(RegistrationStrategy strategy, T Function() body) {
     _strategyStack.add(strategy);
     try {
       return body();
@@ -277,25 +294,31 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
     final buffer = StringBuffer()
       ..writeln('SimpleBinder(${hashCode.toRadixString(16)})')
       ..writeln('  Private:')
-      ..writeln(_privateRegistrations.keys
-          .map((t) => '    - ${t.toString()}')
-          .join('\n')
-          .trimRight())
+      ..writeln(
+        _privateRegistrations.keys
+            .map((t) => '    - ${t.toString()}')
+            .join('\n')
+            .trimRight(),
+      )
       ..writeln('  Public:')
-      ..writeln(_publicRegistrations.keys
-          .map((t) => '    - ${t.toString()}')
-          .join('\n')
-          .trimRight());
+      ..writeln(
+        _publicRegistrations.keys
+            .map((t) => '    - ${t.toString()}')
+            .join('\n')
+            .trimRight(),
+      );
 
     if (includeImports && _imports.isNotEmpty) {
       buffer.writeln('  Imports:');
       for (final imported in _imports) {
         if (imported is SimpleBinder) {
-          buffer.writeln(imported
-              .debugGraph(includeImports: false)
-              .split('\n')
-              .map((line) => '    $line')
-              .join('\n'));
+          buffer.writeln(
+            imported
+                .debugGraph(includeImports: false)
+                .split('\n')
+                .map((line) => '    $line')
+                .join('\n'),
+          );
         } else {
           buffer.writeln('    - ${imported.runtimeType}');
         }

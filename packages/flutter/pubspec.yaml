@@ -10,8 +10,10 @@ topics:
   - modules
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
   flutter: ">=3.0.0"
+
+resolution: workspace
 
 dependencies:
   flutter:
@@ -22,4 +24,4 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  lints: ^3.0.0
+  lints: ^4.0.0

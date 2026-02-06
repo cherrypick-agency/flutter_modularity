@@ -1,6 +1,6 @@
 name: modularity_injectable
 description: Injectable + GetIt integration utilities for the Modularity framework. Enables auto-wiring while preserving strict module boundaries.
-version: 0.1.0
+version: 0.1.1
 repository: https://github.com/cherrypick-agency/modularity_dart/tree/main/packages/modularity_injectable
 homepage: https://github.com/cherrypick-agency/modularity_dart
 issue_tracker: https://github.com/cherrypick-agency/modularity_dart/issues
@@ -11,7 +11,9 @@ topics:
   - injectable
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.5.0 <4.0.0'
+
+resolution: workspace
 
 dependencies:
   get_it: '>=7.6.0 <10.0.0'
@@ -20,6 +22,6 @@ dependencies:
   modularity_core: ^0.1.0
 
 dev_dependencies:
-  lints: ^3.0.0
+  lints: ^4.0.0
   test: ^1.24.0
 

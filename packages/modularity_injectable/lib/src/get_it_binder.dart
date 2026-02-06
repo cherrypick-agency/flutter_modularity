@@ -3,6 +3,19 @@ import 'package:modularity_contracts/modularity_contracts.dart';
 
 /// Binder implementation backed by scoped GetIt instances.
 class GetItBinder implements ExportableBinder {
+  /// Create a binder with optional [imports] and [parent] scope.
+  ///
+  /// Each instance gets its own private and public [GetIt] containers.
+  GetItBinder({
+    List<Binder> imports = const [],
+    Binder? parent,
+  })  : _privateScope = GetIt.asNewInstance(),
+        _publicScope = GetIt.asNewInstance(),
+        _imports = imports.toList(),
+        _parent = parent {
+    // Allow reassignment for hot reload support
+    _publicScope.allowReassignment = true;
+  }
   final GetIt _privateScope;
   final GetIt _publicScope;
   final List<Binder> _imports;
@@ -16,17 +29,6 @@ class GetItBinder implements ExportableBinder {
 
   final Map<Type, void Function()> _privateDisposers = {};
   final Map<Type, void Function()> _publicDisposers = {};
-
-  GetItBinder({
-    List<Binder> imports = const [],
-    Binder? parent,
-  })  : _privateScope = GetIt.asNewInstance(),
-        _publicScope = GetIt.asNewInstance(),
-        _imports = imports.toList(),
-        _parent = parent {
-    // Allow reassignment for hot reload support
-    _publicScope.allowReassignment = true;
-  }
 
   /// Exposes the scoped container used for private registrations.
   GetIt get internalContainer => _privateScope;
@@ -91,13 +93,13 @@ class GetItBinder implements ExportableBinder {
   T get<T extends Object>() {
     final value = tryGet<T>();
     if (value != null) return value;
-    final available = [
-      ..._privateTypes,
-      ..._publicTypes,
-    ].map((type) => type.toString()).join(', ');
-    throw StateError(
-      'Dependency of type $T not found in current scope.\n'
-      'Available local registrations: [$available]',
+    throw DependencyNotFoundException(
+      'Dependency of type $T not found in current scope.',
+      requestedType: T,
+      availableTypes: [
+        ..._privateTypes,
+        ..._publicTypes,
+      ],
     );
   }
 
@@ -133,7 +135,11 @@ class GetItBinder implements ExportableBinder {
     if (value != null) {
       return value;
     }
-    throw StateError('Dependency of type $T not found in parent scope.');
+    throw DependencyNotFoundException(
+      'Dependency of type $T not found in parent scope.',
+      requestedType: T,
+      lookupContext: 'parent scope',
+    );
   }
 
   @override
@@ -224,12 +230,12 @@ class GetItBinder implements ExportableBinder {
 
     if (_isExportMode) {
       if (_publicSealed) {
-        throw StateError(
+        throw ModuleConfigurationException(
           'Public scope is sealed. Call resetPublicScope() before exporting new types.',
         );
       }
       if (typeSet.contains(T)) {
-        throw StateError(
+        throw ModuleConfigurationException(
           'Type $T is already exported. Duplicated exports are not allowed.',
         );
       }
@@ -253,7 +259,9 @@ class GetItBinder implements ExportableBinder {
   }
 }
 
+/// [BinderFactory] that produces [GetItBinder] instances.
 class GetItBinderFactory implements BinderFactory {
+  /// Create a const factory.
   const GetItBinderFactory();
 
   @override

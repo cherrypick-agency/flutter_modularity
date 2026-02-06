@@ -1,3 +1,4 @@
+import 'package:modularity_contracts/modularity_contracts.dart';
 import 'package:modularity_injectable/modularity_injectable.dart';
 import 'package:test/test.dart';
 
@@ -8,17 +9,17 @@ class _ExportedService {}
 class _AnotherExport {}
 
 class _FactoryService {
-  static int instanceCount = 0;
   _FactoryService() {
     instanceCount++;
   }
+  static int instanceCount = 0;
 }
 
 class _SingletonService {
-  static int instanceCount = 0;
   _SingletonService() {
     instanceCount++;
   }
+  static int instanceCount = 0;
 }
 
 class _EagerService {}
@@ -74,7 +75,7 @@ void main() {
       expect(
         () => provider
             .registerLazySingleton<_ExportedService>(() => _ExportedService()),
-        throwsStateError,
+        throwsA(isA<ModuleConfigurationException>()),
       );
     });
 
@@ -89,7 +90,7 @@ void main() {
       expect(
         () => provider
             .registerLazySingleton<_AnotherExport>(() => _AnotherExport()),
-        throwsStateError,
+        throwsA(isA<ModuleConfigurationException>()),
       );
 
       provider.resetPublicScope();

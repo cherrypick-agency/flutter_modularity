@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:modularity_flutter/modularity_flutter.dart';
-import '../../stores/product_store.dart';
+
 import '../../stores/cart_store.dart';
+import '../../stores/product_store.dart';
 import '../details/product_details_module.dart';
 
 class HomeModule extends Module {
   @override
-  List<Module> get submodules => [
-        ProductDetailsModule(),
-      ];
+  List<Module> get submodules => [ProductDetailsModule()];
 
   @override
   List<Type> get expects => [CartStore];

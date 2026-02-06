@@ -17,10 +17,7 @@ class DashboardPage extends StatelessWidget {
     return ModuleScope(
       module: DashboardModule(),
       child: AutoTabsScaffold(
-        routes: const [
-          HomeRoute(),
-          SettingsRoute(),
-        ],
+        routes: const [HomeRoute(), SettingsRoute()],
         bottomNavigationBuilder: (_, tabsRouter) {
           return BottomNavigationBar(
             currentIndex: tabsRouter.activeIndex,
@@ -28,7 +25,9 @@ class DashboardPage extends StatelessWidget {
             items: const [
               BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
               BottomNavigationBarItem(
-                  icon: Icon(Icons.settings), label: 'Settings'),
+                icon: Icon(Icons.settings),
+                label: 'Settings',
+              ),
             ],
           );
         },

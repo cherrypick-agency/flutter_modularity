@@ -5,14 +5,10 @@ import '../profile/profile_module.dart';
 
 class HomeModule extends Module {
   @override
-  List<Module> get imports => [
-        AuthModule(),
-      ];
+  List<Module> get imports => [AuthModule()];
 
   @override
-  List<Module> get submodules => [
-        ProfileModule(),
-      ];
+  List<Module> get submodules => [ProfileModule()];
 
   @override
   void binds(Binder i) {

@@ -1,8 +1,87 @@
 name: modularity_workspace
 description: A modularity workspace.
+publish_to: none
+
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
+
+workspace:
+  - packages/contracts
+  - packages/core
+  - packages/flutter
+  - packages/modularity_cli
+  - packages/modularity_injectable
+  - packages/modularity_test
+  - packages/test_utils
+  - packages/adapters/modularity_get_it
+  - packages/shared_modules/modularity_http_client
+  - examples/complex_app
+  - examples/complex_mobx
+  - examples/example_auto_route
+  - examples/example_bloc
+  - examples/example_go_router
+  - examples/example_riverpod
 
 dev_dependencies:
-  melos: ^3.0.0
+  melos: ^7.0.0
 
+melos:
+  name: modularity
+  repository: https://github.com/cherrypick-agency/modularity_dart
+
+  scripts:
+    analyze:
+      exec: flutter analyze .
+      description: Run `flutter analyze` in all packages.
+
+    test:core:
+      exec: flutter test
+      packageFilters:
+        scope: modularity_core
+      description: Run tests for Core package.
+
+    test:flutter:
+      exec: flutter test
+      packageFilters:
+        scope: modularity_flutter
+      description: Run tests for Flutter package.
+
+    test:cli:
+      exec: flutter test
+      packageFilters:
+        scope: modularity_cli
+      description: Run tests for CLI package.
+
+    test:infra:
+      exec: flutter test
+      packageFilters:
+        scope: modularity_test
+      description: Run tests for Modularity Test Infrastructure.
+
+    test:injectable:
+      exec: dart test
+      packageFilters:
+        scope: modularity_injectable
+      description: Run tests for Injectable package.
+
+    test:examples:
+      exec: flutter test
+      packageFilters:
+        scope:
+          - example_*
+          - complex_*
+      description: Run tests for all examples.
+
+    test:all:
+      run: melos run test:core && melos run test:flutter && melos run test:cli && melos run test:infra && melos run test:injectable && melos run test:examples
+      description: Run all tests across the entire workspace.
+
+    test:coverage:
+      exec: flutter test --coverage
+      packageFilters:
+        dirExists: test
+      description: Run tests with coverage for all packages with a test directory.
+
+    coverage:report:
+      run: melos run test:coverage && ./tool/generate_html_report.sh
+      description: Run tests with coverage and generate a combined HTML report locally.

@@ -8,8 +8,8 @@ class DashboardModule extends Module {
 }
 
 class DashboardPage extends StatelessWidget {
-  final Widget child;
   const DashboardPage({super.key, required this.child});
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +21,9 @@ class DashboardPage extends StatelessWidget {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.settings), label: 'Settings'),
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ],
       ),
     );

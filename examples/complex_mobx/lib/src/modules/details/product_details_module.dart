@@ -5,13 +5,12 @@ import '../../domain/entities.dart';
 import '../../stores/cart_store.dart';
 
 class ProductDetailsModule extends Module implements Configurable<Product> {
+  ProductDetailsModule();
   late Product _product;
 
   // Test Tracker
   static bool wasDisposed = false;
   static bool wasInit = false;
-
-  ProductDetailsModule();
 
   @override
   void configure(Product args) {
@@ -24,7 +23,7 @@ class ProductDetailsModule extends Module implements Configurable<Product> {
   @override
   void binds(Binder i) {
     // Local dependency
-    i.singleton<String>(() => "Details for ${_product.name}");
+    i.singleton<String>(() => 'Details for ${_product.name}');
   }
 
   @override
@@ -60,14 +59,17 @@ class ProductDetailsPage extends StatelessWidget {
             Observer(
               builder: (_) {
                 // Check if item is in cart using the parent store
-                final isInCart =
-                    cartStore.items.any((i) => title.contains(i.name));
+                final isInCart = cartStore.items.any(
+                  (i) => title.contains(i.name),
+                );
                 return isInCart
-                    ? const Text("Already in Cart",
-                        style: TextStyle(color: Colors.green))
-                    : const Text("Not in Cart");
+                    ? const Text(
+                        'Already in Cart',
+                        style: TextStyle(color: Colors.green),
+                      )
+                    : const Text('Not in Cart');
               },
-            )
+            ),
           ],
         ),
       ),

@@ -6,8 +6,8 @@ import 'package:modularity_core/modularity_core.dart';
 import '../modularity.dart';
 import '../retention/module_retention_strategy.dart';
 import '../retention/retention_identity.dart';
-import 'module_provider.dart';
 import 'modularity_root.dart';
+import 'module_provider.dart';
 
 /// Widget that manages the lifecycle of a [Module] and exposes its DI container.
 ///
@@ -42,6 +42,23 @@ import 'modularity_root.dart';
 /// )
 /// ```
 class ModuleScope<T extends Module> extends StatefulWidget {
+  /// Create a [ModuleScope] that manages the lifecycle of [module].
+  const ModuleScope({
+    super.key,
+    required this.module,
+    required this.child,
+    this.args,
+    this.loadingBuilder,
+    this.errorBuilder,
+    this.retentionPolicy = ModuleRetentionPolicy.routeBound,
+    this.retentionKey,
+    this.retentionExtras,
+    @Deprecated('Use retentionPolicy/retentionKey instead')
+    this.disposeModule = true,
+    this.overrides,
+    this.overrideScope,
+  });
+
   /// The module instance to manage.
   final T module;
 
@@ -56,7 +73,7 @@ class ModuleScope<T extends Module> extends StatefulWidget {
 
   /// Builder for error state UI with retry callback.
   final Widget Function(BuildContext, Object? error, VoidCallback retry)?
-      errorBuilder;
+  errorBuilder;
 
   /// How the controller lifecycle is managed.
   ///
@@ -72,6 +89,7 @@ class ModuleScope<T extends Module> extends StatefulWidget {
   /// Additional data for retention key derivation.
   final Map<String, Object?>? retentionExtras;
 
+  /// Whether to dispose the module controller on widget unmount.
   @Deprecated('Use retentionPolicy/retentionKey instead')
   final bool disposeModule;
 
@@ -82,22 +100,6 @@ class ModuleScope<T extends Module> extends StatefulWidget {
   ///
   /// Note: Does NOT affect [retentionKey] derivation. See class documentation.
   final ModuleOverrideScope? overrideScope;
-
-  const ModuleScope({
-    Key? key,
-    required this.module,
-    required this.child,
-    this.args,
-    this.loadingBuilder,
-    this.errorBuilder,
-    this.retentionPolicy = ModuleRetentionPolicy.routeBound,
-    this.retentionKey,
-    this.retentionExtras,
-    @Deprecated('Use retentionPolicy/retentionKey instead')
-    this.disposeModule = true,
-    this.overrides,
-    this.overrideScope,
-  }) : super(key: key);
 
   @override
   _ModuleScopeState<T> createState() => _ModuleScopeState<T>();
@@ -153,8 +155,8 @@ class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>> {
     // Scope Chaining: Find Parent Binder
     Binder? parentBinder;
     try {
-      final parentProvider =
-          context.dependOnInheritedWidgetOfExactType<ModuleProvider>();
+      final parentProvider = context
+          .dependOnInheritedWidgetOfExactType<ModuleProvider>();
       parentBinder = parentProvider?.controller.binder;
     } catch (_) {}
 
@@ -325,10 +327,7 @@ class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>> {
       return content;
     }
 
-    return _RetentionKeyScope(
-      value: key,
-      child: content,
-    );
+    return _RetentionKeyScope(value: key, child: content);
   }
 
   Widget _buildContent() {
@@ -389,9 +388,11 @@ class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>> {
               onTap: _retry,
               child: const Padding(
                 padding: EdgeInsets.all(8.0),
-                child: Text('Retry',
-                    textDirection: TextDirection.ltr,
-                    style: TextStyle(color: Color(0xFF0000FF))),
+                child: Text(
+                  'Retry',
+                  textDirection: TextDirection.ltr,
+                  style: TextStyle(color: Color(0xFF0000FF)),
+                ),
               ),
             ),
           ],
@@ -423,16 +424,13 @@ class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>> {
 }
 
 class _RetentionKeyScope extends InheritedWidget {
-  const _RetentionKeyScope({
-    required this.value,
-    required super.child,
-  });
+  const _RetentionKeyScope({required this.value, required super.child});
 
   final Object value;
 
   static Object? maybeOf(BuildContext context) {
-    final scope =
-        context.dependOnInheritedWidgetOfExactType<_RetentionKeyScope>();
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<_RetentionKeyScope>();
     return scope?.value;
   }
 

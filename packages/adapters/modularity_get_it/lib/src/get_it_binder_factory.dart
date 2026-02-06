@@ -1,12 +1,16 @@
 import 'package:modularity_contracts/modularity_contracts.dart';
 import 'get_it_binder.dart';
 
+/// [BinderFactory] that produces [GetItBinder] instances.
+///
+/// Set [useGlobalInstance] to `true` to share the global [GetIt.instance]
+/// across all created binders instead of creating isolated containers.
 class GetItBinderFactory implements BinderFactory {
-  final bool useGlobalInstance;
+  /// Create a factory, optionally enabling [useGlobalInstance].
+  const GetItBinderFactory({this.useGlobalInstance = false});
 
-  const GetItBinderFactory({
-    this.useGlobalInstance = false,
-  });
+  /// Whether created binders should use the global [GetIt] singleton.
+  final bool useGlobalInstance;
 
   @override
   Binder create([Binder? parent]) {

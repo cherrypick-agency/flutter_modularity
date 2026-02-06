@@ -13,12 +13,9 @@ class MyModule extends Module {
 
 void main() {
   test('MyModule registers MyService', () async {
-    await testModule(
-      MyModule(),
-      (module, binder) async {
-        final service = binder.get<MyService>();
-        expect(service, isA<MyService>());
-      },
-    );
+    await testModule(MyModule(), (module, binder) async {
+      final service = binder.get<MyService>();
+      expect(service, isA<MyService>());
+    });
   });
 }

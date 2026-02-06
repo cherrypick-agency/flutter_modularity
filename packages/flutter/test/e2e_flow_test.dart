@@ -10,8 +10,8 @@ class AuthService {
 }
 
 class UserService {
-  final AuthService auth;
   UserService(this.auth);
+  final AuthService auth;
   String get username => auth.isLoggedIn ? 'User123' : 'Guest';
 }
 
@@ -55,17 +55,14 @@ class TestApp extends StatelessWidget {
     return ModularityRoot(
       child: MaterialApp(
         navigatorObservers: [Modularity.observer],
-        home: ModuleScope(
-          module: UserModule(),
-          child: const UserPage(),
-        ),
+        home: ModuleScope(module: UserModule(), child: const UserPage()),
       ),
     );
   }
 }
 
 class UserPage extends StatelessWidget {
-  const UserPage({Key? key}) : super(key: key);
+  const UserPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -73,8 +70,8 @@ class UserPage extends StatelessWidget {
     final userService = binder.get<UserService>();
 
     // Capture the controller to pass it to the next route
-    final parentProvider =
-        context.dependOnInheritedWidgetOfExactType<ModuleProvider>();
+    final parentProvider = context
+        .dependOnInheritedWidgetOfExactType<ModuleProvider>();
     final parentController = parentProvider?.controller;
 
     return Scaffold(
@@ -120,7 +117,7 @@ class UserPage extends StatelessWidget {
 }
 
 class FeaturePage extends StatelessWidget {
-  const FeaturePage({Key? key}) : super(key: key);
+  const FeaturePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -137,10 +134,13 @@ class FeaturePage extends StatelessWidget {
       body: Center(
         child: SingleChildScrollView(
           // Fix Overflow in Feature Page too
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Text('Feature Page Body'),
-            Text('User from Parent: ${userService.username}'),
-          ]),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Feature Page Body'),
+              Text('User from Parent: ${userService.username}'),
+            ],
+          ),
         ),
       ),
     );
@@ -148,8 +148,9 @@ class FeaturePage extends StatelessWidget {
 }
 
 void main() {
-  testWidgets('E2E: Complex Flow (Imports -> Parents -> State Change)',
-      (tester) async {
+  testWidgets('E2E: Complex Flow (Imports -> Parents -> State Change)', (
+    tester,
+  ) async {
     // Set screen size to avoid overflow
     tester.view.physicalSize = const Size(800, 1200); // Increased size
     tester.view.devicePixelRatio = 1.0;
@@ -175,11 +176,12 @@ void main() {
 
     // We use descendent to find title inside AppBar
     expect(
-        find.descendant(
-          of: find.byType(AppBar),
-          matching: find.text('Feature Page'),
-        ),
-        findsOneWidget);
+      find.descendant(
+        of: find.byType(AppBar),
+        matching: find.text('Feature Page'),
+      ),
+      findsOneWidget,
+    );
 
     // And find.text for the body content
     expect(find.text('Feature Page Body'), findsOneWidget);

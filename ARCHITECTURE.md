@@ -3,25 +3,25 @@
 Version: 1.0.3
 Status: Released
 
-Philosophy: "Glue, not Magic". Строгость в DI и Lifecycle, гибкость в UI и Routing.
+Philosophy: "Glue, not Magic". Strictness in DI and Lifecycle, flexibility in UI and Routing.
 
-## **1. Глоссарий и Основные Абстракции**
+## **1. Glossary and Core Abstractions**
 
-- **Module (Модуль):** Класс конфигурации (DTO/Composition Root). Определяет граф зависимостей (imports), биндинги (binds) и требования (expects). **Не хранит состояние.**
-- **ModuleController:** Движок модуля. Управляет жизненным циклом (State Machine: initial -> loading -> loaded), валидирует зависимости и выполняет инициализацию.
-- **Binder:** Абстракция DI контейнера. Поддерживает scopes (parent/child).
-- **ModuleScope:** Виджет, связывающий ModuleController с UI.
-- **Retention Policy:** Стратегия управления памятью. Использует **RouteObserver** для надежного dispose.
+- **Module:** Configuration class (DTO/Composition Root). Defines the dependency graph (imports), bindings (binds), and requirements (expects). **Does not hold state.**
+- **ModuleController:** Module engine. Manages the lifecycle (State Machine: initial -> loading -> loaded), validates dependencies, and performs initialization.
+- **Binder:** DI container abstraction. Supports scopes (parent/child).
+- **ModuleScope:** Widget that connects ModuleController to the UI.
+- **Retention Policy:** Memory management strategy. Uses **RouteObserver** for reliable disposal.
 
 ## **2. Module Contract**
 
 ```dart
 abstract class Module {
-  /// Список модулей, которые должны быть инициализированы ДО этого модуля.
+  /// List of modules that must be initialized BEFORE this module.
   List<Module> get imports => [];
 
-  /// Список типов, которые ОБЯЗАН предоставить родительский скоуп.
-  /// Если зависимость не найдена, инициализация упадет с ошибкой.
+  /// List of types that the parent scope MUST provide.
+  /// If a dependency is not found, initialization will fail with an error.
   List<Type> get expects => [];
 
   void binds(Binder i);
@@ -29,53 +29,53 @@ abstract class Module {
 
   Future<void> onInit() async {}
   void onDispose() {}
-  
-  /// Хук для Hot Reload (DX).
-  /// Позволяет обновить фабрики без потери состояния синглтонов.
+
+  /// Hook for Hot Reload (DX).
+  /// Allows updating factories without losing singleton state.
   void hotReload(Binder i) {}
 }
 ```
 
 ## **3. Explicit Module Interface (Private vs Public)**
 
-Мы применяем паттерн **Explicit Module Interface**, который строго разделяет внутренние реализации и публичный контракт модуля. Это обеспечивает высокую степень инкапсуляции и предотвращает утечку деталей реализации.
+We apply the **Explicit Module Interface** pattern, which strictly separates internal implementations from the module's public contract. This ensures a high degree of encapsulation and prevents implementation details from leaking.
 
 ### **3.1. `binds(Binder i)` — Private Scope**
-Здесь регистрируются зависимости, которые нужны **только этому модулю**. Они **не видны** другим модулям, даже если те импортируют текущий.
+Dependencies needed **only by this module** are registered here. They are **not visible** to other modules, even if those modules import the current one.
 
-*   **Что здесь:** Реализации репозиториев (`AuthRepositoryImpl`), источники данных (`ApiService`, `LocalStorage`), мапперы, внутренние утилиты.
-*   **Принцип:** "Черный ящик". Внешний мир не должен знать, как модуль работает внутри.
+*   **What goes here:** Repository implementations (`AuthRepositoryImpl`), data sources (`ApiService`, `LocalStorage`), mappers, internal utilities.
+*   **Principle:** "Black box". The outside world should not know how the module works internally.
 
 ### **3.2. `exports(Binder i)` — Public Scope**
-Здесь регистрируются зависимости, которые модуль **предоставляет** внешнему миру. Эти зависимости попадают в публичный скоуп и становятся доступны модулям, которые добавили этот модуль в `imports`.
+Dependencies that the module **provides** to the outside world are registered here. These dependencies enter the public scope and become available to modules that add this module to their `imports`.
 
-*   **Что здесь:** Интерфейсы сервисов (`AuthService`), интерфейсы репозиториев (если они публичные), UseCases.
-*   **Принцип:** "Контракт". Это единственное, что видят другие модули.
+*   **What goes here:** Service interfaces (`AuthService`), repository interfaces (if public), UseCases.
+*   **Principle:** "Contract". This is the only thing other modules see.
 
-> Для отладки можно вывести текущее состояние биндера:
+> For debugging, you can print the current binder state:
 > ```dart
 > debugPrint((binder as SimpleBinder).debugGraph(includeImports: true));
 > ```
-> Так видно, какие типы зарегистрированы приватно, а какие экспортированы.
+> This shows which types are registered privately and which are exported.
 
-### **Пример (Google Spec Style):**
+### **Example (Google Spec Style):**
 
 ```dart
 class AuthModule extends Module {
   @override
   void binds(Binder i) {
-    // --- PRIVATE: Никто снаружи это не увидит ---
+    // --- PRIVATE: No one outside will see this ---
     // 1. Data Sources
     i.singleton<TokenStorage>(() => SecureTokenStorage());
     // 2. Implementation details
-    i.singleton<AuthApi>(() => AuthApiImpl()); 
+    i.singleton<AuthApi>(() => AuthApiImpl());
   }
 
   @override
   void exports(Binder i) {
-    // --- PUBLIC: Это доступно другим модулям ---
-    // Мы экспортируем только интерфейс AuthService.
-    // Реализация AuthServiceImpl инжектится внутри, имея доступ к приватным зависимостям.
+    // --- PUBLIC: This is available to other modules ---
+    // We export only the AuthService interface.
+    // The AuthServiceImpl implementation is injected internally, having access to private dependencies.
     i.singleton<AuthService>(() => AuthServiceImpl(
       storage: i.get<TokenStorage>(),
       api: i.get<AuthApi>(),
@@ -86,25 +86,25 @@ class AuthModule extends Module {
 
 ## **4. Dependency Injection & Scoping**
 
-Фреймворк поддерживает дерево скоупов:
-1. **Local:** Зависимости текущего модуля.
-2. **Imports:** Публичные зависимости импортированных модулей.
-3. **Parent:** Зависимости родительского модуля (вверх по дереву виджетов).
+The framework supports a scope tree:
+1. **Local:** Dependencies of the current module.
+2. **Imports:** Public dependencies of imported modules.
+3. **Parent:** Dependencies of the parent module (up the widget tree).
 
 ```dart
-// Поиск: Local -> Imports -> Parent -> Error
-i.get<Service>(); 
+// Lookup: Local -> Imports -> Parent -> Error
+i.get<Service>();
 
-// Явный запрос к родителю
+// Explicit request to parent
 i.parent<Service>();
 ```
 
 ## **5. State Management Integration**
 
-Modularity агностичен к State Management. Он управляет жизненным циклом модулей, а SM управляет состоянием UI.
+Modularity is state management agnostic. It manages the lifecycle of modules, while SM manages the UI state.
 
 ### **Bloc / Cubit**
-Регистрируйте Cubit в `binds` и используйте `BlocProvider` в виджете.
+Register Cubit in `binds` and use `BlocProvider` in the widget.
 
 ```dart
 // 1. Module
@@ -129,7 +129,7 @@ class CounterPage extends StatelessWidget {
 ```
 
 ### **Riverpod**
-Используйте `ProviderScope` с `overrides` для внедрения зависимостей из модуля.
+Use `ProviderScope` with `overrides` to inject dependencies from the module.
 
 ```dart
 // 1. Riverpod Provider (Abstract)
@@ -140,7 +140,7 @@ class RiverpodPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authService = ModuleProvider.of(context).get<AuthService>();
-    
+
     return ProviderScope(
       overrides: [
         authProvider.overrideWithValue(authService),
@@ -153,22 +153,22 @@ class RiverpodPage extends StatelessWidget {
 
 ## **6. Retention Policy & Navigation**
 
-Жизненный цикл виджета `ModuleScope` управляется формальной политикой `ModuleRetentionPolicy`:
+The lifecycle of the `ModuleScope` widget is managed by a formal `ModuleRetentionPolicy`:
 
-- `routeBound` — дефолт. Привязка к навигационному стеку (`RouteObserver`). Модуль уничтожается в `didPop`.
-- `keepAlive` — контроллер кешируется в `ModuleRetainer` и может переживать unmount (табы, NestedNavigators). Освобождается через `ModuleRetainer.evict(key)` или после перезапуска приложения.
-- `strict` — жёсткая стратегия. Модуль уничтожается при первом `dispose` виджета.
+- `routeBound` — default. Bound to the navigation stack (`RouteObserver`). The module is destroyed on `didPop`.
+- `keepAlive` — the controller is cached in `ModuleRetainer` and can survive unmount (tabs, NestedNavigators). Released via `ModuleRetainer.evict(key)` or after app restart.
+- `strict` — strict strategy. The module is destroyed on the first widget `dispose`.
 
 ```dart
 ModuleScope(
   module: HomeModule(),
   retentionPolicy: ModuleRetentionPolicy.routeBound,
-  retentionKey: routeName, // опционально. По умолчанию генерируется автоматически.
+  retentionKey: routeName, // optional. Generated automatically by default.
   child: HomePage(),
 );
 ```
 
-Для `routeBound` по-прежнему необходимо подключить `Modularity.observer`:
+For `routeBound`, you still need to connect `Modularity.observer`:
 
 ```dart
 // main.dart
@@ -178,24 +178,24 @@ MaterialApp(
 );
 ```
 
-- **Push:** создаёт модуль и подписывает на route observer.
-- **Cover (Push over):** модуль остаётся в памяти (роут ещё в стеке).
-- **Pop:** стратегия `routeBound` вызывает `dispose`, модуль удаляется из ретейнера.
-- **Unmount без роут-ивентов:** fallback к `strict`, чтобы не допустить утечек.
+- **Push:** creates a module and subscribes to the route observer.
+- **Cover (Push over):** the module stays in memory (route is still in the stack).
+- **Pop:** the `routeBound` strategy calls `dispose`, the module is removed from the retainer.
+- **Unmount without route events:** falls back to `strict` to prevent leaks.
 
 ### **6.1. Retention Key vs Override Scope**
 
-**Важно:** `retentionKey` и `overrideScope` — независимые концепции:
+**Important:** `retentionKey` and `overrideScope` are independent concepts:
 
-| Параметр | Назначение | Влияет на кеш? |
-|----------|-----------|----------------|
-| `retentionKey` | Идентификатор контроллера в кеше | ✅ Да |
-| `overrideScope` | Подмена зависимостей в DI-графе | ❌ Нет |
+| Parameter | Purpose | Affects cache? |
+|-----------|---------|----------------|
+| `retentionKey` | Controller identifier in the cache | Yes |
+| `overrideScope` | Dependency substitution in the DI graph | No |
 
-Два `ModuleScope` с одинаковым `retentionKey`, но разными `overrideScope` **шарят** один контроллер — overrides первого scope'а побеждают.
+Two `ModuleScope` widgets with the same `retentionKey` but different `overrideScope` **share** a single controller — the first scope's overrides win.
 
 ```dart
-// Если нужно override-aware кеширование:
+// For override-aware caching:
 ModuleScope(
   module: ConfigModule(),
   retentionKey: 'config-${identityHashCode(overrideScope)}',
@@ -206,7 +206,7 @@ ModuleScope(
 
 ### **6.2. Lifecycle Logging**
 
-Для отладки retention-поведения используйте встроенный логгер:
+For debugging retention behavior, use the built-in logger:
 
 ```dart
 void main() {
@@ -215,9 +215,9 @@ void main() {
 }
 ```
 
-События: `created`, `reused`, `registered`, `disposed`, `evicted`, `released`, `routeTerminated`.
+Events: `created`, `reused`, `registered`, `disposed`, `evicted`, `released`, `routeTerminated`.
 
-Для интеграции с аналитикой/мониторингом:
+For analytics/monitoring integration:
 
 ```dart
 Modularity.lifecycleLogger = (event, type, {retentionKey, details}) {
@@ -231,7 +231,7 @@ Modularity.lifecycleLogger = (event, type, {retentionKey, details}) {
 ## **7. Testing Strategy**
 
 ### **Unit Testing (Headless)**
-Используйте `testModule` из `modularity_test` для тестирования логики модуля в изоляции.
+Use `testModule` from `modularity_test` for testing module logic in isolation.
 
 ```dart
 await testModule(
@@ -244,12 +244,12 @@ await testModule(
 ```
 
 ### **Widget Testing**
-Для тестирования отдельных экранов используется `overrides`.
+For testing individual screens, use `overrides`.
 
 ```dart
 ModuleScope(
   module: ProfileModule(),
-  // Подмена зависимостей ПЕРЕД инициализацией
+  // Override dependencies BEFORE initialization
   overrides: (binder) {
     binder.singleton<Api>(() => MockApi());
   },
@@ -259,7 +259,7 @@ ModuleScope(
 
 ## **8. Routing Integration**
 
-Modularity легко интегрируется с популярными пакетами роутинга. Главное требование — подключить `Modularity.observer`.
+Modularity integrates easily with popular routing packages. The main requirement is to connect `Modularity.observer`.
 
 ### **GoRouter**
 
@@ -311,11 +311,11 @@ class HomePage extends StatelessWidget {
 
 ## **9. Developer Tools (CLI)**
 
-Используйте `modularity_cli` для визуализации графа зависимостей.
+Use `modularity_cli` to visualize the dependency graph.
 
 ```bash
 # Create a script in tool/visualize.dart
 dart tool/visualize.dart
 ```
 
-Это сгенерирует HTML-файл с интерактивным графом модулей.
+This will generate an HTML file with an interactive module graph.

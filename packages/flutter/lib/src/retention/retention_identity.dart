@@ -1,6 +1,16 @@
 import 'package:flutter/widgets.dart';
 import 'package:modularity_contracts/modularity_contracts.dart';
 
+/// Derive a stable cache key for a [Module] within the retention system.
+///
+/// If [explicitKey] is provided it is returned as-is. Otherwise a composite
+/// key is computed from the module type, the enclosing route, [args],
+/// [parentKey], and [extras].
+///
+/// When the [module] implements [RetentionIdentityProvider], the module is
+/// given the opportunity to supply a custom identity via
+/// [RetentionIdentityProvider.buildRetentionIdentity]. If it returns `null`,
+/// the default composite hash is used instead.
 Object deriveRetentionKey({
   required Module module,
   required BuildContext context,
@@ -33,8 +43,11 @@ Object deriveRetentionKey({
     contextPayload.argumentsHash,
     contextPayload.parentKey,
     if (contextPayload.extras.isNotEmpty)
-      Object.hashAll(contextPayload.extras.entries
-          .map((e) => Object.hash(e.key, _stableHash(e.value)))),
+      Object.hashAll(
+        contextPayload.extras.entries.map(
+          (e) => Object.hash(e.key, _stableHash(e.value)),
+        ),
+      ),
   ]);
 }
 
@@ -44,19 +57,17 @@ int? _stableHash(Object? value) {
     return Object.hash(value.runtimeType, value);
   }
   if (value is Iterable) {
-    return Object.hashAll(
-      value.map(_stableHash).map((hash) => hash ?? 0),
-    );
+    return Object.hashAll(value.map(_stableHash).map((hash) => hash ?? 0));
   }
   if (value is Map) {
     final entries = value.entries.toList()
       ..sort((a, b) => a.key.toString().compareTo(b.key.toString()));
-    return Object.hashAll(entries.map(
-      (entry) => Object.hash(
-        _stableHash(entry.key),
-        _stableHash(entry.value),
+    return Object.hashAll(
+      entries.map(
+        (entry) =>
+            Object.hash(_stableHash(entry.key), _stableHash(entry.value)),
       ),
-    ));
+    );
   }
   return Object.hash(value.runtimeType, value.hashCode);
 }

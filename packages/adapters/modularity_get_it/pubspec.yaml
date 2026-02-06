@@ -10,7 +10,9 @@ topics:
   - modularity
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
+
+resolution: workspace
 
 dependencies:
   get_it: ^8.0.0
@@ -20,4 +22,4 @@ dev_dependencies:
   test: ^1.24.0
   flutter_test:
     sdk: flutter
-  lints: ^3.0.0
+  lints: ^4.0.0

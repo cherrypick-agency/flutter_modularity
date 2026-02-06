@@ -17,6 +17,7 @@ enum ModuleRetentionPolicy {
 
 /// Context payload used to derive a deterministic retention identity.
 class ModuleRetentionContext {
+  /// Create a retention context for the given [moduleType].
   ModuleRetentionContext({
     required this.moduleType,
     this.routeName,

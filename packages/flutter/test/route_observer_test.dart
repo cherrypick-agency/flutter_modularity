@@ -21,8 +21,9 @@ class TestModule extends Module {
 }
 
 void main() {
-  testWidgets('ModuleScope Retention Policy: Dispose only on Pop',
-      (tester) async {
+  testWidgets('ModuleScope Retention Policy: Dispose only on Pop', (
+    tester,
+  ) async {
     final module = TestModule();
 
     await tester.pumpWidget(
@@ -94,7 +95,7 @@ void main() {
 }
 
 class SecondPage extends StatelessWidget {
-  const SecondPage({Key? key}) : super(key: key);
+  const SecondPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +116,7 @@ class SecondPage extends StatelessWidget {
           ElevatedButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Back to Home'),
-          )
+          ),
         ],
       ),
     );
@@ -123,7 +124,7 @@ class SecondPage extends StatelessWidget {
 }
 
 class ThirdPage extends StatelessWidget {
-  const ThirdPage({Key? key}) : super(key: key);
+  const ThirdPage({super.key});
 
   @override
   Widget build(BuildContext context) {

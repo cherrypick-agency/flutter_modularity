@@ -10,13 +10,14 @@ Optional integration package that connects **injectable** + **GetIt** code gener
 
 - `GetItBinder` — a `Binder` implementation backed by scoped GetIt instances
 - `ModularityInjectableBridge` — helper to invoke injectable-generated functions inside `binds`/`exports`
+- `BinderGetIt` — GetIt proxy that resolves dependencies through Modularity rules (local/imports/parent)
 - `modularityExportEnv` — environment constant to mark dependencies for export
 
 ## Installation
 
 ```yaml
 dependencies:
-  modularity_injectable: ^0.0.1
+  modularity_injectable: ^0.1.1
 
 dev_dependencies:
   build_runner: ^2.4.0

@@ -7,8 +7,8 @@ class PublicService {}
 class PrivateImpl {}
 
 class HotReloadFactory {
-  final int version;
   HotReloadFactory(this.version);
+  final int version;
 }
 
 class ProviderModule extends Module {
@@ -120,8 +120,8 @@ class OverridableModule extends Module {
 class MockPublicService extends PublicService {}
 
 class ConfigData {
-  final String value;
   ConfigData(this.value);
+  final String value;
 }
 
 class ConfigurableModule extends Module implements Configurable<ConfigData> {
@@ -309,41 +309,42 @@ void main() {
       await controller.initialize(registry);
       controller.hotReload();
 
-      expect(
-        controller.binder.get<PublicService>(),
-        isA<PublicService>(),
-      );
+      expect(controller.binder.get<PublicService>(), isA<PublicService>());
     });
 
-    test('hotReload preserves singleton instances and updates factories',
-        () async {
-      final registry = <ModuleRegistryKey, ModuleController>{};
-      final controller = ModuleController(HotReloadModule());
+    test(
+      'hotReload preserves singleton instances and updates factories',
+      () async {
+        final registry = <ModuleRegistryKey, ModuleController>{};
+        final controller = ModuleController(HotReloadModule());
 
-      await controller.initialize(registry);
+        await controller.initialize(registry);
 
-      final singleton1 = controller.binder.get<PublicService>();
-      final factory1 = controller.binder.get<HotReloadFactory>();
-      expect(factory1.version, equals(1));
+        final singleton1 = controller.binder.get<PublicService>();
+        final factory1 = controller.binder.get<HotReloadFactory>();
+        expect(factory1.version, equals(1));
 
-      controller.hotReload();
+        controller.hotReload();
 
-      final singleton2 = controller.binder.get<PublicService>();
-      final factory2 = controller.binder.get<HotReloadFactory>();
+        final singleton2 = controller.binder.get<PublicService>();
+        final factory2 = controller.binder.get<HotReloadFactory>();
 
-      expect(singleton2, same(singleton1));
-      expect(factory2.version, equals(2));
-    });
+        expect(singleton2, same(singleton1));
+        expect(factory2.version, equals(2));
+      },
+    );
 
     test('child override scope applies overrides to imports', () async {
       final registry = <ModuleRegistryKey, ModuleController>{};
-      final overrideScope = ModuleOverrideScope(children: {
-        ChildOverridesModule: ModuleOverrideScope(
-          selfOverrides: (binder) {
-            binder.registerLazySingleton<PublicService>(() => MockService());
-          },
-        ),
-      });
+      final overrideScope = ModuleOverrideScope(
+        children: {
+          ChildOverridesModule: ModuleOverrideScope(
+            selfOverrides: (binder) {
+              binder.registerLazySingleton<PublicService>(() => MockService());
+            },
+          ),
+        },
+      );
 
       final controller = ModuleController(
         ParentOverridesModule(),
@@ -359,22 +360,27 @@ void main() {
     test('child override scope stays isolated per controller', () async {
       final registry = <ModuleRegistryKey, ModuleController>{};
 
-      final overrideScopeA = ModuleOverrideScope(children: {
-        ChildOverridesModule: ModuleOverrideScope(
-          selfOverrides: (binder) {
-            binder.registerLazySingleton<PublicService>(() => MockService());
-          },
-        ),
-      });
+      final overrideScopeA = ModuleOverrideScope(
+        children: {
+          ChildOverridesModule: ModuleOverrideScope(
+            selfOverrides: (binder) {
+              binder.registerLazySingleton<PublicService>(() => MockService());
+            },
+          ),
+        },
+      );
 
-      final overrideScopeB = ModuleOverrideScope(children: {
-        ChildOverridesModule: ModuleOverrideScope(
-          selfOverrides: (binder) {
-            binder.registerLazySingleton<PublicService>(
-                () => AnotherMockService());
-          },
-        ),
-      });
+      final overrideScopeB = ModuleOverrideScope(
+        children: {
+          ChildOverridesModule: ModuleOverrideScope(
+            selfOverrides: (binder) {
+              binder.registerLazySingleton<PublicService>(
+                () => AnotherMockService(),
+              );
+            },
+          ),
+        },
+      );
 
       final controllerA = ModuleController(
         ParentOverridesModule(),
@@ -459,10 +465,7 @@ void main() {
     test('interceptors receive lifecycle events', () async {
       final interceptor = _TestInterceptor();
       final module = LifecycleOrderModule();
-      final controller = ModuleController(
-        module,
-        interceptors: [interceptor],
-      );
+      final controller = ModuleController(module, interceptors: [interceptor]);
       final registry = <ModuleRegistryKey, ModuleController>{};
 
       await controller.initialize(registry);
@@ -490,10 +493,7 @@ void main() {
     test('interceptors receive onDispose', () async {
       final interceptor = _TestInterceptor();
       final module = LifecycleOrderModule();
-      final controller = ModuleController(
-        module,
-        interceptors: [interceptor],
-      );
+      final controller = ModuleController(module, interceptors: [interceptor]);
       final registry = <ModuleRegistryKey, ModuleController>{};
 
       await controller.initialize(registry);
@@ -515,10 +515,7 @@ void main() {
 
       await controller.initialize(registry);
 
-      expect(
-        controller.binder.get<PublicService>(),
-        isA<MockPublicService>(),
-      );
+      expect(controller.binder.get<PublicService>(), isA<MockPublicService>());
     });
   });
 

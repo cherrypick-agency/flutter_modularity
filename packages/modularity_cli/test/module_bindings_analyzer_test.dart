@@ -25,11 +25,15 @@ void main() {
       final snapshot = analyzer.analyze(SampleModule());
 
       expect(snapshot.privateDependencies, hasLength(1));
-      expect(snapshot.privateDependencies.first.displayName,
-          '_PrivateDependency [factory]');
+      expect(
+        snapshot.privateDependencies.first.displayName,
+        '_PrivateDependency [factory]',
+      );
       expect(snapshot.publicDependencies, hasLength(1));
-      expect(snapshot.publicDependencies.first.displayName,
-          'ExposedService [instance]');
+      expect(
+        snapshot.publicDependencies.first.displayName,
+        'ExposedService [instance]',
+      );
       expect(snapshot.warnings, isEmpty);
     });
   });

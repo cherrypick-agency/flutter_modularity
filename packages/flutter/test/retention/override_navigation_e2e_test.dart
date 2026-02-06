@@ -36,7 +36,8 @@ class ConfigModule extends Module {
   @override
   void exports(Binder binder) {
     binder.registerLazySingleton<ConfigService>(
-        () => binder.get<ConfigService>());
+      () => binder.get<ConfigService>(),
+    );
   }
 
   @override
@@ -106,10 +107,13 @@ void main() {
                 overrideScope: overrideScopeA,
                 child: Builder(
                   builder: (context) {
-                    final service =
-                        ModuleProvider.of(context).get<ConfigService>();
-                    return Text('Route1: ${service.variant}',
-                        textDirection: TextDirection.ltr);
+                    final service = ModuleProvider.of(
+                      context,
+                    ).get<ConfigService>();
+                    return Text(
+                      'Route1: ${service.variant}',
+                      textDirection: TextDirection.ltr,
+                    );
                   },
                 ),
               ),
@@ -133,10 +137,13 @@ void main() {
               overrideScope: overrideScopeB,
               child: Builder(
                 builder: (context) {
-                  final service =
-                      ModuleProvider.of(context).get<ConfigService>();
-                  return Text('Route2: ${service.variant}',
-                      textDirection: TextDirection.ltr);
+                  final service = ModuleProvider.of(
+                    context,
+                  ).get<ConfigService>();
+                  return Text(
+                    'Route2: ${service.variant}',
+                    textDirection: TextDirection.ltr,
+                  );
                 },
               ),
             ),
@@ -203,10 +210,13 @@ void main() {
                 overrideScope: overrideA,
                 child: Builder(
                   builder: (context) {
-                    final service =
-                        ModuleProvider.of(context).get<ConfigService>();
-                    return Text('Route1: ${service.variant}',
-                        textDirection: TextDirection.ltr);
+                    final service = ModuleProvider.of(
+                      context,
+                    ).get<ConfigService>();
+                    return Text(
+                      'Route1: ${service.variant}',
+                      textDirection: TextDirection.ltr,
+                    );
                   },
                 ),
               ),
@@ -237,10 +247,13 @@ void main() {
               overrideScope: overrideB, // Different override - but key is same
               child: Builder(
                 builder: (context) {
-                  final service =
-                      ModuleProvider.of(context).get<ConfigService>();
-                  return Text('Route3: ${service.variant}',
-                      textDirection: TextDirection.ltr);
+                  final service = ModuleProvider.of(
+                    context,
+                  ).get<ConfigService>();
+                  return Text(
+                    'Route3: ${service.variant}',
+                    textDirection: TextDirection.ltr,
+                  );
                 },
               ),
             ),
@@ -250,8 +263,11 @@ void main() {
 
         // Should REUSE module1's controller (same key), NOT apply overrideB
         expect(find.text('Route3: variant-a'), findsOneWidget);
-        expect(module2.initCount, 0,
-            reason: 'module2 should not be initialized');
+        expect(
+          module2.initCount,
+          0,
+          reason: 'module2 should not be initialized',
+        );
         expect(retainer.debugSnapshot().length, 1);
       },
     );
@@ -287,9 +303,7 @@ void main() {
 
       // Pop to trigger route termination
       navigatorKey.currentState!.pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => const SizedBox.shrink(),
-        ),
+        MaterialPageRoute<void>(builder: (_) => const SizedBox.shrink()),
       );
       await tester.pumpAndSettle();
 
@@ -307,11 +321,11 @@ void main() {
       final module = ConfigModule();
 
       Widget buildHome() => ModuleScope(
-            module: module,
-            retentionPolicy: ModuleRetentionPolicy.keepAlive,
-            retentionKey: 'home-module',
-            child: const Text('Home', textDirection: TextDirection.ltr),
-          );
+        module: module,
+        retentionPolicy: ModuleRetentionPolicy.keepAlive,
+        retentionKey: 'home-module',
+        child: const Text('Home', textDirection: TextDirection.ltr),
+      );
 
       await tester.pumpWidget(
         ModularityRoot(

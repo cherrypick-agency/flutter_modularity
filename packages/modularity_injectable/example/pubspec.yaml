@@ -7,8 +7,8 @@ environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
-  modularity_contracts: ^0.0.2
-  modularity_core: ^0.0.2
+  modularity_contracts: ^0.1.0
+  modularity_core: ^0.1.0
   modularity_injectable:
     path: ..
   get_it: ^7.6.4

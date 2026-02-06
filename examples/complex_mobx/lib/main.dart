@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:modularity_flutter/modularity_flutter.dart';
-import 'src/modules/root/root_module.dart';
+
 import 'src/modules/auth/auth_module.dart';
+import 'src/modules/root/root_module.dart';
 
 void main() {
   // Enable lifecycle logging in debug mode for easier debugging
@@ -24,14 +25,8 @@ class ComplexApp extends StatelessWidget {
         child: MaterialApp(
           title: 'Complex MobX Shop',
           navigatorObservers: [Modularity.observer],
-          theme: ThemeData(
-            useMaterial3: true,
-            primarySwatch: Colors.blue,
-          ),
-          home: ModuleScope(
-            module: AuthModule(),
-            child: const LoginPage(),
-          ),
+          theme: ThemeData(useMaterial3: true, primarySwatch: Colors.blue),
+          home: ModuleScope(module: AuthModule(), child: const LoginPage()),
         ),
       ),
     );

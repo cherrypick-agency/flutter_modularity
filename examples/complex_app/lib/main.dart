@@ -21,15 +21,10 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Complex Modularity App',
         navigatorObservers: [
-          Modularity.observer
+          Modularity.observer,
         ], // Enable RouteBound retention
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: ModuleScope(
-          module: HomeModule(),
-          child: const HomePage(),
-        ),
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: ModuleScope(module: HomeModule(), child: const HomePage()),
       ),
     );
   }

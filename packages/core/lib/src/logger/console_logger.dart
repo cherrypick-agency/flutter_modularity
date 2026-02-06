@@ -1,11 +1,15 @@
 import 'dart:developer' as developer;
 import 'package:modularity_contracts/modularity_contracts.dart';
 
+/// [ModularityLogger] implementation that forwards messages to [developer.log].
 class ConsoleLogger implements ModularityLogger {
-  final bool enabled;
-
+  /// Create a [ConsoleLogger] that is [enabled] by default.
   const ConsoleLogger({this.enabled = true});
 
+  /// Whether logging output is active. Set to `false` to suppress all messages.
+  final bool enabled;
+
+  /// Write a log [message] at the given [level] via `dart:developer`.
   @override
   void log(
     String message, {

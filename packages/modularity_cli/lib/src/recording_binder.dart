@@ -1,8 +1,20 @@
 import 'package:modularity_contracts/modularity_contracts.dart';
 
-enum DependencyRegistrationKind { singleton, factory, instance }
+/// Classify how a dependency is registered in a [Binder].
+enum DependencyRegistrationKind {
+  /// Registered as a lazy singleton that is created on first access.
+  singleton,
 
+  /// Registered as a factory that produces a new instance on every access.
+  factory,
+
+  /// Registered as a pre-built instance (eager singleton).
+  instance,
+}
+
+/// Provide a human-readable label for each [DependencyRegistrationKind] value.
 extension DependencyRegistrationKindLabel on DependencyRegistrationKind {
+  /// Return a lowercase label suitable for display in graphs and logs.
   String get label {
     switch (this) {
       case DependencyRegistrationKind.singleton:
@@ -15,22 +27,30 @@ extension DependencyRegistrationKindLabel on DependencyRegistrationKind {
   }
 }
 
+/// Hold metadata about a single dependency registration.
 class DependencyRecord {
+  /// Create a record for the given [type] registered with [kind].
   DependencyRecord(this.type, this.kind);
 
+  /// The runtime type of the registered dependency.
   final Type type;
+
+  /// The registration strategy used (singleton, factory, or instance).
   final DependencyRegistrationKind kind;
 
+  /// Return a human-readable string combining [type] and [kind].
   String get displayName => '${type.toString()} [${kind.label}]';
 }
 
-/// Binder implementation that records registrations without instantiating them.
+/// [Binder] implementation that records registrations without instantiating them.
+///
+/// Used by [ModuleBindingsAnalyzer] to introspect which types a module
+/// registers during its `binds` and `exports` phases.
 class RecordingBinder implements ExportableBinder {
-  RecordingBinder({
-    List<Binder> imports = const [],
-    Binder? parent,
-  })  : _imports = List.of(imports),
-        _parent = parent;
+  /// Create a recording binder with optional [imports] and [parent] scope.
+  RecordingBinder({List<Binder> imports = const [], Binder? parent})
+    : _imports = List.of(imports),
+      _parent = parent;
 
   final List<Binder> _imports;
   final Binder? _parent;
@@ -41,9 +61,11 @@ class RecordingBinder implements ExportableBinder {
   bool _isExportMode = false;
   bool _publicSealed = false;
 
+  /// Return an unmodifiable list of privately registered dependencies.
   List<DependencyRecord> get privateDependencies =>
       List.unmodifiable(_privateRecords);
 
+  /// Return an unmodifiable list of publicly exported dependencies.
   List<DependencyRecord> get publicDependencies =>
       List.unmodifiable(_publicRecords);
 
@@ -105,21 +127,24 @@ class RecordingBinder implements ExportableBinder {
     final record = DependencyRecord(type, kind);
     if (_isExportMode) {
       if (_publicSealed) {
-        throw StateError(
-            'Public scope is sealed. Cannot export dependency $type.');
+        throw ModuleConfigurationException(
+          'Public scope is sealed. Cannot export dependency $type.',
+        );
       }
       final alreadyExported =
           _publicRecords.indexWhere((r) => r.type == type) != -1;
       if (alreadyExported) {
-        throw StateError(
-            'Dependency $type is already exported. Duplicate exports are not allowed.');
+        throw ModuleConfigurationException(
+          'Dependency $type is already exported. Duplicate exports are not allowed.',
+        );
       }
       _publicRecords.add(record);
       return;
     }
 
-    final existingIndex =
-        _privateRecords.indexWhere((element) => element.type == type);
+    final existingIndex = _privateRecords.indexWhere(
+      (element) => element.type == type,
+    );
     if (existingIndex >= 0) {
       _privateRecords[existingIndex] = record;
     } else {
@@ -129,7 +154,7 @@ class RecordingBinder implements ExportableBinder {
 
   @override
   T get<T extends Object>() {
-    throw StateError(
+    throw ModuleConfigurationException(
       'RecordingBinder cannot resolve $T during analysis. '
       'Avoid calling get() synchronously inside binds/exports when generating graphs.',
     );
@@ -141,9 +166,13 @@ class RecordingBinder implements ExportableBinder {
   @override
   T parent<T extends Object>() {
     if (_parent == null) {
-      throw StateError('No parent binder available for $T.');
+      throw DependencyNotFoundException(
+        'No parent binder available for $T.',
+        requestedType: T,
+        lookupContext: 'parent scope',
+      );
     }
-    return _parent!.get<T>();
+    return _parent.get<T>();
   }
 
   @override
@@ -185,9 +214,11 @@ class RecordingBinder implements ExportableBinder {
     return _publicRecords.any((record) => record.type == type);
   }
 
+  /// Return display names of all private dependency records.
   List<String> describePrivateDependencies() =>
       _privateRecords.map((e) => e.displayName).toList(growable: false);
 
+  /// Return display names of all public dependency records.
   List<String> describePublicDependencies() =>
       _publicRecords.map((e) => e.displayName).toList(growable: false);
 }

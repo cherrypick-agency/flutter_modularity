@@ -10,16 +10,16 @@ Repository: [github.com/cherrypick-agency/modularity_dart](https://github.com/ch
 
 ---
 
-## 📑 Table of Contents
+## Table of Contents
 
-- [📦 Packages](#-packages)
-- [🚀 Key Features](#-key-features)
-- [⚖️ Comparison](#️-comparison)
-- [🛠 Getting Started](#-getting-started)
+- [Packages](#packages)
+- [Key Features](#key-features)
+- [Comparison](#comparison)
+- [Getting Started](#getting-started)
   - [1. Define a Module](#1-define-a-module)
   - [2. Initialize Root](#2-initialize-root)
   - [3. Use in UI](#3-use-in-ui)
-- [🧩 Advanced Features](#-advanced-features)
+- [Advanced Features](#advanced-features)
   - [Lifecycle Hooks (onInit / onDispose)](#lifecycle-hooks-oninit--ondispose)
   - [Configurable Modules](#configurable-modules)
   - [Expected Dependencies (expects)](#expected-dependencies-expects)
@@ -29,23 +29,23 @@ Repository: [github.com/cherrypick-agency/modularity_dart](https://github.com/ch
   - [Hot Reload Support](#hot-reload-support)
   - [Custom Retention Identity](#custom-retention-identity)
   - [ModularityRoot Configuration](#modularityroot-configuration)
-- [🔌 Router Integration](#-router-integration)
+- [Router Integration](#router-integration)
   - [GoRouter](#gorouter)
   - [AutoRoute](#autoroute)
-- [📊 CLI Visualization](#-cli-visualization)
-- [🔧 DI Container Adapters](#-di-container-adapters)
+- [CLI Visualization](#cli-visualization)
+- [DI Container Adapters](#di-container-adapters)
   - [GetIt Integration](#getit-integration)
   - [Injectable Integration](#injectable-integration)
-- [🧪 Testing](#-testing)
-- [🔍 Diagnostics](#-diagnostics)
+- [Testing](#testing)
+- [Diagnostics](#diagnostics)
   - [Binder Graph](#binder-graph)
   - [Lifecycle Logging](#lifecycle-logging)
-- [📖 Binder API Reference](#-binder-api-reference)
-- [⚠️ Retention Key vs Override Scope](#️-retention-key-vs-override-scope)
+- [Binder API Reference](#binder-api-reference)
+- [Retention Key vs Override Scope](#retention-key-vs-override-scope)
 
 ---
 
-## 📦 Packages
+## Packages
 
 | Package | Version | Pub Points | Description |
 | ------- | ------- | ---------- | ----------- |
@@ -57,7 +57,7 @@ Repository: [github.com/cherrypick-agency/modularity_dart](https://github.com/ch
 | [modularity_get_it](https://pub.dev/packages/modularity_get_it) | [![pub](https://img.shields.io/pub/v/modularity_get_it.svg)](https://pub.dev/packages/modularity_get_it) | [![pub points](https://img.shields.io/pub/points/modularity_get_it)](https://pub.dev/packages/modularity_get_it/score) | GetIt adapter for Modularity |
 | [modularity_injectable](https://pub.dev/packages/modularity_injectable) | [![pub](https://img.shields.io/pub/v/modularity_injectable.svg)](https://pub.dev/packages/modularity_injectable) | [![pub points](https://img.shields.io/pub/points/modularity_injectable)](https://pub.dev/packages/modularity_injectable/score) | Optional injectable + GetIt integration |
 
-## 🚀 Key Features
+## Key Features
 
 - **Strict Dependency Injection**: Dependencies are explicitly `imported` and `exported`. No hidden global access.
 - **Deterministic Lifecycle**: Modules pass through a formal state machine (`initial` → `loading` → `loaded` → `disposed`). `onInit` runs only after all imports are ready.
@@ -65,7 +65,7 @@ Repository: [github.com/cherrypick-agency/modularity_dart](https://github.com/ch
 - **Framework Agnostic**: Works with GoRouter, AutoRoute, or Navigator 1.0.
 - **Observability**: Built-in interceptors and Graphviz visualization support.
 
-## ⚖️ Comparison
+## Comparison
 
 How **Modularity** compares to other popular approaches in the Flutter ecosystem:
 
@@ -78,7 +78,7 @@ How **Modularity** compares to other popular approaches in the Flutter ecosystem
 | **Routing Coupling** | **Loose**. Works with any router (GoRouter, AutoRoute, etc.). Routing is an implementation detail. | **Strong**. The router is a core part of the framework. Hard to use with other routing solutions. | **Indirect**. No direct coupling, but state management often gets entangled with navigation arguments. |
 | **Testing** | **Unit-first**. `testModule` isolates logic completely. You can test the entire wiring without Flutter. | **Integration mainly**. Focuses on testing the module with the router mocked or real. | **Widget tests required**. Often requires `pumpWidget` to test the DI integration properly. |
 
-## 🛠 Getting Started
+## Getting Started
 
 ### 1. Define a Module
 
@@ -147,7 +147,7 @@ class HomePage extends StatelessWidget {
 }
 ```
 
-## 🧩 Advanced Features
+## Advanced Features
 
 ### Lifecycle Hooks (onInit / onDispose)
 
@@ -403,7 +403,7 @@ ModuleScope(
 )
 ```
 
-## 🔌 Router Integration
+## Router Integration
 
 ### GoRouter
 
@@ -453,7 +453,7 @@ runApp(ModularityRoot(
 ));
 ```
 
-## 📊 CLI Visualization
+## CLI Visualization
 
 Generate dependency graphs with `modularity_cli`:
 
@@ -479,7 +479,7 @@ Run with `dart run tool/visualize.dart` — opens an interactive diagram showing
 | `graphviz` | Static DOT diagram via quickchart.io |
 | `g6` | Interactive drag-and-zoom with tooltips |
 
-## 🔧 DI Container Adapters
+## DI Container Adapters
 
 ### GetIt Integration
 
@@ -520,7 +520,7 @@ void main() {
 }
 ```
 
-## 🧪 Testing
+## Testing
 
 Use `modularity_test` to verify your module's wiring and logic in isolation.
 
@@ -537,7 +537,7 @@ void main() {
 }
 ```
 
-## 🔍 Diagnostics
+## Diagnostics
 
 ### Binder Graph
 
@@ -614,7 +614,7 @@ Modularity.lifecycleLogger = (event, type, {retentionKey, details}) {
 
 Available events: `created`, `reused`, `registered`, `disposed`, `evicted`, `released`, `routeTerminated`.
 
-## 📖 Binder API Reference
+## Binder API Reference
 
 | Method | Description |
 |--------|-------------|
@@ -626,7 +626,7 @@ Available events: `created`, `reused`, `registered`, `disposed`, `evicted`, `rel
 | `contains<T>()` | Check if type is registered |
 | `parent<T>()` | Get from parent scope only |
 
-## ⚠️ Retention Key vs Override Scope
+## Retention Key vs Override Scope
 
 When using `keepAlive` retention policy, understand the distinction:
 

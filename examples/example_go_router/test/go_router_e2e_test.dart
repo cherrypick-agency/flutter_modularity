@@ -8,9 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets(
-      'GoRouter E2E Flow: Login -> Home -> Details -> Settings -> Logout',
-      (WidgetTester tester) async {
+  testWidgets('GoRouter E2E Flow: Login -> Home -> Details -> Settings -> Logout', (
+    WidgetTester tester,
+  ) async {
     // 1. Start App
     await tester.pumpWidget(const MyApp());
     await tester.pumpAndSettle();

@@ -10,17 +10,17 @@ class _AnotherExport {}
 class _SharedService {}
 
 class _FactoryService {
-  static int instanceCount = 0;
   _FactoryService() {
     instanceCount++;
   }
+  static int instanceCount = 0;
 }
 
 class _SingletonService {
-  static int instanceCount = 0;
   _SingletonService() {
     instanceCount++;
   }
+  static int instanceCount = 0;
 }
 
 class _EagerService {}
@@ -49,8 +49,9 @@ void main() {
 
     test('private registrations remain invisible to imports', () {
       final provider = SimpleBinder();
-      provider
-          .registerLazySingleton<_InternalService>(() => _InternalService());
+      provider.registerLazySingleton<_InternalService>(
+        () => _InternalService(),
+      );
 
       final consumer = SimpleBinder();
       consumer.addImports([provider]);
@@ -76,9 +77,10 @@ void main() {
       binder.registerLazySingleton<_PublicService>(() => _PublicService());
 
       expect(
-        () => binder
-            .registerLazySingleton<_PublicService>(() => _PublicService()),
-        throwsStateError,
+        () => binder.registerLazySingleton<_PublicService>(
+          () => _PublicService(),
+        ),
+        throwsA(isA<ModuleConfigurationException>()),
       );
     });
 
@@ -90,9 +92,10 @@ void main() {
 
       binder.enableExportMode();
       expect(
-        () => binder
-            .registerLazySingleton<_AnotherExport>(() => _AnotherExport()),
-        throwsStateError,
+        () => binder.registerLazySingleton<_AnotherExport>(
+          () => _AnotherExport(),
+        ),
+        throwsA(isA<ModuleConfigurationException>()),
       );
 
       binder.resetPublicScope();
@@ -132,8 +135,9 @@ void main() {
     });
 
     test('singleton caches instance after first call', () {
-      binder
-          .registerLazySingleton<_SingletonService>(() => _SingletonService());
+      binder.registerLazySingleton<_SingletonService>(
+        () => _SingletonService(),
+      );
 
       final first = binder.get<_SingletonService>();
       final second = binder.get<_SingletonService>();
@@ -152,13 +156,15 @@ void main() {
     });
 
     test('preserve strategy keeps existing singleton instances', () {
-      binder
-          .registerLazySingleton<_SingletonService>(() => _SingletonService());
+      binder.registerLazySingleton<_SingletonService>(
+        () => _SingletonService(),
+      );
       final initial = binder.get<_SingletonService>();
 
       binder.runWithStrategy(RegistrationStrategy.preserveExisting, () {
         binder.registerLazySingleton<_SingletonService>(
-            () => _SingletonService());
+          () => _SingletonService(),
+        );
       });
 
       final after = binder.get<_SingletonService>();
@@ -213,14 +219,18 @@ void main() {
       consumer.registerLazySingleton<_Level3Service>(() => _Level3Service());
 
       expect(consumer.get<_Level2Service>(), isA<_Level2Service>());
-      expect(consumer.tryGet<_Level1Service>(), isNull,
-          reason: 'Level1 is not re-exported by mid');
+      expect(
+        consumer.tryGet<_Level1Service>(),
+        isNull,
+        reason: 'Level1 is not re-exported by mid',
+      );
     });
 
     test('multiple imports only expose public deps', () {
       final providerA = SimpleBinder();
-      providerA
-          .registerLazySingleton<_InternalService>(() => _InternalService());
+      providerA.registerLazySingleton<_InternalService>(
+        () => _InternalService(),
+      );
       providerA.enableExportMode();
       providerA.registerLazySingleton<_ImportA>(() => _ImportA());
       providerA.disableExportMode();
@@ -263,18 +273,22 @@ void main() {
 
     test('resolution priority: local > imports > parent', () {
       final parentBinder = SimpleBinder();
-      parentBinder
-          .registerLazySingleton<_SharedService>(() => _SharedService());
+      parentBinder.registerLazySingleton<_SharedService>(
+        () => _SharedService(),
+      );
 
       final importBinder = SimpleBinder();
       importBinder.enableExportMode();
-      importBinder
-          .registerLazySingleton<_SharedService>(() => _SharedService());
+      importBinder.registerLazySingleton<_SharedService>(
+        () => _SharedService(),
+      );
       importBinder.disableExportMode();
       importBinder.sealPublicScope();
 
-      final localBinder =
-          SimpleBinder(parent: parentBinder, imports: [importBinder]);
+      final localBinder = SimpleBinder(
+        parent: parentBinder,
+        imports: [importBinder],
+      );
       final localInstance = _SharedService();
       localBinder.registerSingleton<_SharedService>(localInstance);
 
@@ -288,8 +302,9 @@ void main() {
       provider.disableExportMode();
 
       final consumer = SimpleBinder(imports: [provider]);
-      consumer
-          .registerLazySingleton<_InternalService>(() => _InternalService());
+      consumer.registerLazySingleton<_InternalService>(
+        () => _InternalService(),
+      );
 
       final graph = consumer.debugGraph(includeImports: true);
 

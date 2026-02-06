@@ -43,10 +43,7 @@ void main() async {
 
     // Option 2: Interactive AntV G6 diagram
     print('\n--- AntV G6 (interactive) ---');
-    await GraphVisualizer.visualize(
-      MyRootModule(),
-      renderer: GraphRenderer.g6,
-    );
+    await GraphVisualizer.visualize(MyRootModule(), renderer: GraphRenderer.g6);
 
     print('Graphs generated successfully.');
   } catch (e) {

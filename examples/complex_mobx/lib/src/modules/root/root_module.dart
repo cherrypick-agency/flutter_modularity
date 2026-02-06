@@ -6,10 +6,7 @@ import '../main/main_module.dart';
 
 class RootModule extends Module {
   @override
-  List<Module> get submodules => [
-        AuthModule(),
-        MainModule(),
-      ];
+  List<Module> get submodules => [AuthModule(), MainModule()];
 
   @override
   void binds(Binder i) {

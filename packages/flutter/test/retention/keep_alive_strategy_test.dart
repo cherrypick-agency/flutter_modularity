@@ -62,21 +62,28 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(module.disposeCount, 0,
-          reason: 'Controller should stay cached, not disposed');
+      expect(
+        module.disposeCount,
+        0,
+        reason: 'Controller should stay cached, not disposed',
+      );
 
       await tester.pumpWidget(
         _buildHost(showModule: true, module: module, retainer: retainer),
       );
       await tester.pumpAndSettle();
 
-      expect(module.initCount, 1,
-          reason: 'Cached controller should be reused without re-init');
+      expect(
+        module.initCount,
+        1,
+        reason: 'Cached controller should be reused without re-init',
+      );
       expect(module.disposeCount, 0);
     });
 
-    testWidgets('disposes cached controller when owning route pops',
-        (tester) async {
+    testWidgets('disposes cached controller when owning route pops', (
+      tester,
+    ) async {
       final module = LifecycleModule();
       final retainer = ModuleRetainer();
       final navigatorKey = GlobalKey<NavigatorState>();
@@ -101,14 +108,15 @@ void main() {
       expect(retainer.debugSnapshot(), isNotEmpty);
 
       navigatorKey.currentState!.pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => const SizedBox.shrink(),
-        ),
+        MaterialPageRoute<void>(builder: (_) => const SizedBox.shrink()),
       );
       await tester.pumpAndSettle();
 
-      expect(module.disposeCount, 1,
-          reason: 'Route pop should dispose cached controller');
+      expect(
+        module.disposeCount,
+        1,
+        reason: 'Route pop should dispose cached controller',
+      );
       expect(retainer.debugSnapshot(), isEmpty);
     });
 
@@ -133,8 +141,9 @@ void main() {
   });
 
   group('KeepAlive with custom keys', () {
-    testWidgets('modules with different retentionKeys are cached separately',
-        (tester) async {
+    testWidgets('modules with different retentionKeys are cached separately', (
+      tester,
+    ) async {
       final moduleA = LifecycleModule();
       final moduleB = LifecycleModule();
       final retainer = ModuleRetainer();
@@ -171,8 +180,9 @@ void main() {
       expect(retainer.debugSnapshot().length, 2);
     });
 
-    testWidgets('evicting one retention key variant does not affect another',
-        (tester) async {
+    testWidgets('evicting one retention key variant does not affect another', (
+      tester,
+    ) async {
       final module1 = LifecycleModule();
       final module2 = LifecycleModule();
       final retainer = ModuleRetainer();

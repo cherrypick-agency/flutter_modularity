@@ -51,15 +51,19 @@ void main() {
 
       // Import arrow
       expect(
-          dot,
-          contains(
-              '"RootModule" -> "FeatureModule" [style=dashed, color="#616161", label="imports"];'));
+        dot,
+        contains(
+          '"RootModule" -> "FeatureModule" [style=dashed, color="#616161", label="imports"];',
+        ),
+      );
 
       // Submodule composition arrow
       expect(
-          dot,
-          contains(
-              '"RootModule" -> "NestedModule" [dir=back, arrowtail=diamond, color="#1565c0", penwidth=1.5, label="owns"];'));
+        dot,
+        contains(
+          '"RootModule" -> "NestedModule" [dir=back, arrowtail=diamond, color="#1565c0", penwidth=1.5, label="owns"];',
+        ),
+      );
 
       // Dependency lists rendered
       expect(dot, contains('PublicService [singleton]'));

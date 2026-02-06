@@ -34,10 +34,8 @@ class AppRouter {
     routes: [
       GoRoute(
         path: '/login',
-        builder: (context, state) => ModuleScope(
-          module: AuthModule(),
-          child: const AuthPage(),
-        ),
+        builder: (context, state) =>
+            ModuleScope(module: AuthModule(), child: const AuthPage()),
       ),
       ShellRoute(
         builder: (context, state, child) {
@@ -49,10 +47,8 @@ class AppRouter {
         routes: [
           GoRoute(
             path: '/home',
-            builder: (context, state) => ModuleScope(
-              module: HomeModule(),
-              child: const HomePage(),
-            ),
+            builder: (context, state) =>
+                ModuleScope(module: HomeModule(), child: const HomePage()),
             routes: [
               GoRoute(
                 path: 'details/:id',

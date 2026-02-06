@@ -35,8 +35,10 @@ class _CounterView extends StatelessWidget {
       body: Center(
         child: BlocBuilder<CounterCubit, int>(
           builder: (context, count) {
-            return Text('Count: $count',
-                style: Theme.of(context).textTheme.headlineMedium);
+            return Text(
+              'Count: $count',
+              style: Theme.of(context).textTheme.headlineMedium,
+            );
           },
         ),
       ),

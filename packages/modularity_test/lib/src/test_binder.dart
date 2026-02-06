@@ -3,6 +3,8 @@ import 'package:modularity_contracts/modularity_contracts.dart';
 /// A Proxy Binder implementation that records all interactions.
 /// Useful for testing module behavior.
 class TestBinder implements Binder {
+  /// Create a test binder wrapping the given [_delegate].
+  TestBinder(this._delegate);
   final Binder _delegate;
 
   final List<Type> _registeredSingletons = [];
@@ -10,8 +12,6 @@ class TestBinder implements Binder {
   final List<Type> _registeredFactories = [];
   final List<Type> _registeredInstances = [];
   final List<Type> _resolvedTypes = [];
-
-  TestBinder(this._delegate);
 
   /// List of types registered as Singletons.
   List<Type> get registeredSingletons =>

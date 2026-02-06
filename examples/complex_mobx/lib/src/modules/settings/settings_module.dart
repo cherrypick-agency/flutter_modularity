@@ -48,10 +48,7 @@ class _SettingsPageState extends State<SettingsPage> {
             ),
 
             if (_showDebug)
-              ModuleScope(
-                module: DebugModule(),
-                child: const DebugWidget(),
-              ),
+              ModuleScope(module: DebugModule(), child: const DebugWidget()),
 
             const SizedBox(height: 20),
             ElevatedButton(

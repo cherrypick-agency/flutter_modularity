@@ -15,10 +15,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Riverpod Example',
         navigatorObservers: [Modularity.observer],
-        home: ModuleScope(
-          module: CounterModule(),
-          child: const CounterPage(),
-        ),
+        home: ModuleScope(module: CounterModule(), child: const CounterPage()),
       ),
     );
   }

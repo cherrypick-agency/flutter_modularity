@@ -32,12 +32,13 @@ enum ModuleLifecycleEvent {
 /// - [moduleType]: The runtime type of the module.
 /// - [retentionKey]: The cache key (null if not applicable).
 /// - [details]: Additional context (override scope hash, ref count, etc.).
-typedef ModuleLifecycleLogger = void Function(
-  ModuleLifecycleEvent event,
-  Type moduleType, {
-  Object? retentionKey,
-  Map<String, Object?>? details,
-});
+typedef ModuleLifecycleLogger =
+    void Function(
+      ModuleLifecycleEvent event,
+      Type moduleType, {
+      Object? retentionKey,
+      Map<String, Object?>? details,
+    });
 
 /// Global configuration and helpers for Modularity.
 class Modularity {
@@ -71,8 +72,12 @@ class Modularity {
     Object? retentionKey,
     Map<String, Object?>? details,
   }) {
-    lifecycleLogger?.call(event, moduleType,
-        retentionKey: retentionKey, details: details);
+    lifecycleLogger?.call(
+      event,
+      moduleType,
+      retentionKey: retentionKey,
+      details: details,
+    );
   }
 
   /// Enables default debug logging in debug mode.

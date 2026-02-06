@@ -16,8 +16,8 @@ class _ExportedServiceB {}
 class _DependencyService {}
 
 class _ChainedExport {
-  final _DependencyService dependency;
   _ChainedExport(this.dependency);
+  final _DependencyService dependency;
 }
 
 class _NotGetItBinder implements Binder {
@@ -198,7 +198,7 @@ void main() {
           wrongBinder,
           _fakeInit,
         ),
-        throwsStateError,
+        throwsA(isA<ModuleConfigurationException>()),
       );
     });
 
@@ -206,9 +206,13 @@ void main() {
       ModularityInjectableBridge.configureExports(binder, _multiExportInit);
 
       expect(
-          binder.tryGetPublic<_ExportedServiceA>(), isA<_ExportedServiceA>());
+        binder.tryGetPublic<_ExportedServiceA>(),
+        isA<_ExportedServiceA>(),
+      );
       expect(
-          binder.tryGetPublic<_ExportedServiceB>(), isA<_ExportedServiceB>());
+        binder.tryGetPublic<_ExportedServiceB>(),
+        isA<_ExportedServiceB>(),
+      );
       expect(binder.tryGetPublic<_PrivateService>(), isNull);
     });
 
@@ -216,7 +220,9 @@ void main() {
       ModularityInjectableBridge.configureExports(binder, _mixedEnvInit);
 
       expect(
-          binder.tryGetPublic<_ExportedServiceA>(), isA<_ExportedServiceA>());
+        binder.tryGetPublic<_ExportedServiceA>(),
+        isA<_ExportedServiceA>(),
+      );
       expect(binder.tryGetPublic<_ExportedServiceB>(), isNull);
       expect(binder.tryGetPublic<_PrivateService>(), isNull);
     });

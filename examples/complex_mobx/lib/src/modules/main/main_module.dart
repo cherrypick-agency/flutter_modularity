@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:modularity_flutter/modularity_flutter.dart';
+
 import '../../stores/auth_store.dart';
 import '../../stores/cart_store.dart';
-import '../home/home_module.dart';
 import '../cart/cart_module.dart';
+import '../home/home_module.dart';
 import '../settings/settings_module.dart';
 
 class MainModule extends Module {
   @override
-  List<Module> get submodules => [
-        HomeModule(),
-        CartModule(),
-        SettingsModule(),
-      ];
+  List<Module> get submodules => [HomeModule(), CartModule(), SettingsModule()];
 
   @override
   List<Type> get expects => [AuthStore, CartStore];
@@ -40,18 +37,9 @@ class _MainPageState extends State<MainPage> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          ModuleScope(
-            module: HomeModule(),
-            child: const HomePage(),
-          ),
-          ModuleScope(
-            module: CartModule(),
-            child: const CartPage(),
-          ),
-          ModuleScope(
-            module: SettingsModule(),
-            child: const SettingsPage(),
-          ),
+          ModuleScope(module: HomeModule(), child: const HomePage()),
+          ModuleScope(module: CartModule(), child: const CartPage()),
+          ModuleScope(module: SettingsModule(), child: const SettingsPage()),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -60,9 +48,13 @@ class _MainPageState extends State<MainPage> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_cart), label: 'Cart'),
+            icon: Icon(Icons.shopping_cart),
+            label: 'Cart',
+          ),
           BottomNavigationBarItem(
-              icon: Icon(Icons.settings), label: 'Settings'),
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ],
       ),
     );
