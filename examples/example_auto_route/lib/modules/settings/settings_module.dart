@@ -1,8 +1,9 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:modularity_flutter/modularity_flutter.dart';
-import '../root/root_module.dart';
+
 import '../../routes/app_router.dart';
+import '../root/root_module.dart';
 
 class SettingsModule extends Module {
   @override

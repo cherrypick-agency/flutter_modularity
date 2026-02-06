@@ -15,6 +15,7 @@ dependencies:
   modularity_flutter:
     path: ../../packages/flutter
 
+  modularity_contracts: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

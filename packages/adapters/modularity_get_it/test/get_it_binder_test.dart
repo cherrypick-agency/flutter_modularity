@@ -1,7 +1,7 @@
-import 'package:test/test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:modularity_contracts/modularity_contracts.dart';
 import 'package:modularity_get_it/modularity_get_it.dart';
+import 'package:test/test.dart';
 
 void main() {
   group('GetItBinder', () {

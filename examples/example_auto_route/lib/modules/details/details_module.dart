@@ -4,8 +4,8 @@ import 'package:modularity_flutter/modularity_flutter.dart';
 import '../root/root_module.dart';
 
 class DetailsModule extends Module implements Configurable<String> {
-  late String id;
   DetailsModule();
+  late String id;
 
   @override
   void configure(String args) {
@@ -21,8 +21,8 @@ class DetailsModule extends Module implements Configurable<String> {
 
 @RoutePage()
 class DetailsPage extends StatelessWidget {
-  final String id;
   const DetailsPage({required this.id});
+  final String id;
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,6 @@
-import 'package:test/test.dart';
 import 'package:modularity_core/modularity_core.dart';
 import 'package:modularity_test/modularity_test.dart';
+import 'package:test/test.dart';
 
 class TestModule extends Module {
   @override

@@ -1,6 +1,6 @@
 import 'package:complex_app/modules/home/home_module.dart';
-import 'package:modularity_cli/modularity_cli.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:modularity_cli/modularity_cli.dart';
 
 void main() {
   test('Generate Dependency Graph (complex_app)', () async {

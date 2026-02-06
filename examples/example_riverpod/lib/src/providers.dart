@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final counterProvider = StateProvider<int>((ref) => 0);
 
 class AuthService {
-  final String token;
   AuthService(this.token);
+  final String token;
 }
 
 // Provider needing external dependency

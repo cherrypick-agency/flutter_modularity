@@ -1,6 +1,6 @@
+import 'package:complex_mobx/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:complex_mobx/main.dart';
 
 void main() {
   testWidgets('Complex MobX App starts and Login flow works', (tester) async {

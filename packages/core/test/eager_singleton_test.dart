@@ -1,11 +1,11 @@
-import 'package:test/test.dart';
 import 'package:modularity_core/modularity_core.dart';
+import 'package:test/test.dart';
 
 class Service {
-  static int instanceCount = 0;
   Service() {
     instanceCount++;
   }
+  static int instanceCount = 0;
 }
 
 void main() {

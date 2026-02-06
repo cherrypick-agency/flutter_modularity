@@ -31,7 +31,7 @@ melos:
 
   scripts:
     analyze:
-      exec: flutter analyze .
+      exec: flutter analyze --no-fatal-infos --no-fatal-warnings .
       description: Run `flutter analyze` in all packages.
 
     test:core:

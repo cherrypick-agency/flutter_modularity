@@ -1,6 +1,6 @@
+import 'package:complex_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:complex_app/main.dart';
 
 void main() {
   testWidgets('Complex App smoke test', (WidgetTester tester) async {
