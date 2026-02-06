@@ -1,3 +1,11 @@
+## 0.2.0
+
+- Added typed exception hierarchy: `ModularityException`, `DependencyNotFoundException`,
+  `CircularDependencyException`, `ModuleConfigurationException`, `ModuleLifecycleException`.
+- Added comprehensive dartdoc coverage on all public APIs.
+- Added strict `analysis_options.yaml` (strict-casts, strict-inference, strict-raw-types).
+- Migrated to native Dart workspaces (from melos).
+
 ## 0.1.0
 
 - Added `RegistrationStrategy` and `RegistrationAwareBinder` so containers can

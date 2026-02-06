@@ -15,6 +15,8 @@ workspace:
   - packages/test_utils
   - packages/adapters/modularity_get_it
   - packages/shared_modules/modularity_http_client
+  - packages/flutter/example
+  - packages/modularity_injectable/example
   - examples/complex_app
   - examples/complex_mobx
   - examples/example_auto_route

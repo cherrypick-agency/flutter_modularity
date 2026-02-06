@@ -1,3 +1,10 @@
+## 0.2.0
+
+- `GetItBinder` now throws typed exceptions from `modularity_contracts` instead of
+  generic errors.
+- Added comprehensive dartdoc coverage on all public APIs.
+- Added strict `analysis_options.yaml` (strict-casts, strict-inference, strict-raw-types).
+
 ## 0.1.0
 
 - `GetItBinder` now implements `RegistrationAwareBinder` and preserves resolved

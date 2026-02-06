@@ -120,7 +120,8 @@ Future<void> main() async {
   dashboard.render();
 
   print(
-    (dashboardController.binder as GetItBinder)
-        .debugGraph(includeImports: true),
+    (dashboardController.binder as GetItBinder).debugGraph(
+      includeImports: true,
+    ),
   );
 }

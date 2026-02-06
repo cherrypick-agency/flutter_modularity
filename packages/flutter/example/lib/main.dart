@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:modularity_flutter/modularity_flutter.dart';
 
 void main() {
-  runApp(
-    ModularityRoot(
-      child: const MyApp(),
-    ),
-  );
+  runApp(ModularityRoot(child: const MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -14,9 +10,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: HomePage(),
-    );
+    return const MaterialApp(home: HomePage());
   }
 }
 

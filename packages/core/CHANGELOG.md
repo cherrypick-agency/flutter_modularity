@@ -1,3 +1,11 @@
+## 0.2.0
+
+- `SimpleBinder`, `ModuleController`, and `GraphResolver` now throw typed exceptions
+  (`DependencyNotFoundException`, `CircularDependencyException`, `ModuleConfigurationException`,
+  `ModuleLifecycleException`) instead of generic errors.
+- Added comprehensive dartdoc coverage on all public APIs.
+- Added strict `analysis_options.yaml` (strict-casts, strict-inference, strict-raw-types).
+
 ## 0.1.0
 
 - Added `ModuleOverrideScope` for hierarchical overrides and exported it via

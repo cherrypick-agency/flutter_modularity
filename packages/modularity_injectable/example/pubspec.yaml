@@ -4,17 +4,19 @@ publish_to: 'none'
 version: 0.0.1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.9.0 <4.0.0'
+
+resolution: workspace
 
 dependencies:
-  modularity_contracts: ^0.1.0
-  modularity_core: ^0.1.0
+  modularity_contracts: ^0.2.0
+  modularity_core: ^0.2.0
   modularity_injectable:
     path: ..
-  get_it: ^7.6.4
+  get_it: '>=7.6.0 <10.0.0'
   injectable: ^2.3.2
 
 dev_dependencies:
-  lints: ^3.0.0
+  lints: ^4.0.0
   build_runner: ^2.4.14
 

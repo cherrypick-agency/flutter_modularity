@@ -1,3 +1,8 @@
+## 0.2.0
+
+- Added dartdoc coverage on `TestBinder` and all public APIs.
+- Added strict `analysis_options.yaml` (strict-casts, strict-inference, strict-raw-types).
+
 ## 0.1.0
 
 - `testModule` accepts the new `overrideScope` parameter so tests can describe
