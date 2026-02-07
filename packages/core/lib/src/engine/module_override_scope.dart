@@ -28,11 +28,10 @@ class ModuleOverrideScope {
   /// Per-module-type override scopes for imported (child) modules.
   final Map<Type, ModuleOverrideScope> children;
 
-  /// Возвращает скоуп для импортируемого модуля типа [type].
+  /// Returns the override scope for the imported module of the given [type].
   ModuleOverrideScope? childFor(Type type) => children[type];
 
-  /// Создает новый scope с объединёнными overrides (сначала выполняется текущий,
-  /// затем [override]).
+  /// Creates a new scope with combined overrides (current first, then [override]).
   ModuleOverrideScope withAdditionalOverride(BinderOverride? override) {
     return ModuleOverrideScope(
       selfOverrides: _composeOverrides(selfOverrides, override),
@@ -40,7 +39,7 @@ class ModuleOverrideScope {
     );
   }
 
-  /// Слияние двух scope-ов. Overrides выполняются в порядке: текущий -> [other].
+  /// Merges two scopes. Overrides are applied in order: current -> [other].
   ModuleOverrideScope merge(ModuleOverrideScope? other) {
     if (other == null) return this;
     final mergedChildren = <Type, ModuleOverrideScope>{}..addAll(children);

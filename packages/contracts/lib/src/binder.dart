@@ -1,95 +1,95 @@
-/// Определяет стратегию поведения при повторной регистрации зависимостей.
+/// Defines the strategy for handling duplicate dependency registrations.
 enum RegistrationStrategy {
-  /// Повторная регистрация заменяет предыдущее значение (по умолчанию).
+  /// Re-registration replaces the previous value (default).
   replace,
 
-  /// Повторная регистрация сохраняет существующие синглтоны/инстансы и
-  /// обновляет только фабрики.
+  /// Re-registration preserves existing singletons/instances and
+  /// only updates factories.
   preserveExisting,
 }
 
-/// Интерфейс для регистрации зависимостей.
-/// Абстрагирует конкретную реализацию DI (будь то GetIt, карта или что-то еще).
+/// Interface for registering dependencies.
+/// Abstracts the concrete DI implementation (be it GetIt, a map, or anything else).
 abstract class Binder {
-  /// Алиас для [registerLazySingleton].
-  /// Регистрирует синглтон. Создается один раз при первом запросе (lazy).
+  /// Alias for [registerLazySingleton].
+  /// Registers a singleton. Created once on first request (lazy).
   void singleton<T extends Object>(T Function() factory);
 
-  /// Регистрирует ленивый синглтон.
-  /// Создается один раз при первом запросе.
-  /// Аналог [singleton] в Binder, переименован для соответствия GetIt API.
+  /// Registers a lazy singleton.
+  /// Created once on first request.
+  /// Same as [singleton] in Binder, renamed to match the GetIt API.
   void registerLazySingleton<T extends Object>(T Function() factory);
 
-  /// Алиас для [registerFactory].
-  /// Регистрирует фабрику. Создается каждый раз при запросе.
+  /// Alias for [registerFactory].
+  /// Registers a factory. Creates a new instance on every request.
   void factory<T extends Object>(T Function() factory);
 
-  /// Регистрирует фабрику.
-  /// Создается каждый раз при запросе.
-  /// Аналог [factory] в Binder, переименован для соответствия GetIt API.
+  /// Registers a factory.
+  /// Creates a new instance on every request.
+  /// Same as [factory] in Binder, renamed to match the GetIt API.
   void registerFactory<T extends Object>(T Function() factory);
 
-  /// Регистрирует уже созданный инстанс (Eager Singleton).
-  /// Заменяет старые методы [instance] и [eagerSingleton].
+  /// Registers an already-created instance (Eager Singleton).
+  /// Replaces the legacy [instance] and [eagerSingleton] methods.
   void registerSingleton<T extends Object>(T instance);
 
-  /// Получает зависимость типа [T].
-  /// [moduleId] - опциональный идентификатор модуля, который запрашивает зависимость (для скоупинга).
+  /// Retrieves a dependency of type [T].
+  /// [moduleId] is an optional module identifier for scoping.
   T get<T extends Object>();
 
-  /// Пытается получить зависимость, возвращает null если не найдено.
+  /// Attempts to retrieve a dependency, returns null if not found.
   T? tryGet<T extends Object>();
 
-  /// Получает зависимость из родительского скоупа (Explicit Parent Lookup).
+  /// Retrieves a dependency from the parent scope (Explicit Parent Lookup).
   T parent<T extends Object>();
 
-  /// Пытается получить зависимость из родительского скоупа.
+  /// Attempts to retrieve a dependency from the parent scope.
   T? tryParent<T extends Object>();
 
-  /// Добавляет внешние биндеры (импорты), в которых нужно искать зависимости.
+  /// Adds external binders (imports) to search for dependencies.
   void addImports(List<Binder> binders);
 
-  /// Проверяет наличие зависимостей указанного типа (включая родителей и импорты).
+  /// Checks whether a dependency of the given type exists (including parents and imports).
   bool contains(Type type);
 }
 
-/// Расширенный интерфейс для Binder, поддерживающий экспорт зависимостей.
+/// Extended interface for Binder that supports exporting dependencies.
 abstract class ExportableBinder implements Binder {
-  /// Включает режим экспорта (регистрация в публичный скоуп).
+  /// Enables export mode (registrations go to the public scope).
   void enableExportMode();
 
-  /// Выключает режим экспорта (регистрация в приватный скоуп).
+  /// Disables export mode (registrations go to the private scope).
   void disableExportMode();
 
-  /// Пытается получить зависимость ТОЛЬКО из публичного скоупа.
+  /// Attempts to retrieve a dependency ONLY from the public scope.
   T? tryGetPublic<T extends Object>();
 
-  /// Проверяет наличие публичной зависимости.
+  /// Checks whether a public dependency of the given type exists.
   bool containsPublic(Type type);
 
-  /// Помечает публичный скоуп как «замороженный» после завершения exports.
-  /// После вызова новые регистрации в export-режиме запрещены, пока
-  /// [resetPublicScope] явно не откроет его повторно (например, для hot reload).
+  /// Marks the public scope as sealed after exports are complete.
+  /// After this call, new export-mode registrations are rejected until
+  /// [resetPublicScope] explicitly reopens it (e.g. for hot reload).
   void sealPublicScope();
 
-  /// Сбрасывает флаг заморозки публичного скоупа. Нужен для hot reload,
-  /// когда нужно обновить фабрики, не создавая новый Binder.
+  /// Resets the public scope seal flag. Needed for hot reload
+  /// when factories need to be updated without creating a new Binder.
   void resetPublicScope();
 
-  /// Флаг, показывающий активен ли режим экспорта.
+  /// Flag indicating whether export mode is currently active.
   bool get isExportModeEnabled;
 
-  /// Флаг, показывающий, что публичный скоуп был заморожен.
+  /// Flag indicating whether the public scope has been sealed.
   bool get isPublicScopeSealed;
 }
 
-/// Дополнительный контракт для Binder, который умеет переключать стратегию
-/// регистрации во время выполнения (например, для hot reload).
+/// Additional contract for a Binder that can switch its registration
+/// strategy at runtime (e.g. for hot reload).
 abstract class RegistrationAwareBinder implements Binder {
-  /// Текущая стратегия регистрации.
+  /// The current registration strategy.
   RegistrationStrategy get registrationStrategy;
 
-  /// Выполняет [body] с указанной [strategy], автоматически восстанавливая
-  /// предыдущую стратегию после завершения.
+  /// Executes [body] with the given [strategy], automatically restoring
+  /// the previous strategy when [body] completes.
   T runWithStrategy<T>(RegistrationStrategy strategy, T Function() body);
 }

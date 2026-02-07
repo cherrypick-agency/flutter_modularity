@@ -172,7 +172,7 @@ class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>> {
       interceptors: Modularity.interceptors, // Pass global interceptors
     );
 
-    // Конфигурируем (args передаются в configure(T args))
+    // Configure the module (args are passed to configure(T args))
     if (widget.args != null) {
       controller.configure(widget.args);
     }
@@ -223,7 +223,7 @@ class _ModuleScopeState<T extends Module> extends State<ModuleScope<T>> {
     if (runInitialize) {
       final registry = ModularityRoot.registryOf(context);
       controller.initialize(registry).catchError((_) {
-        // Ошибки ловим в listen
+        // Errors are caught in the listen callback
       });
     }
   }

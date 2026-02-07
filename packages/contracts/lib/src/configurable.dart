@@ -1,6 +1,6 @@
-/// Интерфейс для модулей, которые требуют конфигурации перед инициализацией.
-/// Используется для передачи аргументов (например, id из роута) в модуль.
+/// Interface for modules that require configuration before initialization.
+/// Used to pass arguments (e.g. a route id) into a module.
 abstract class Configurable<T> {
-  /// Вызывается фреймворком перед [Module.binds] и [Module.onInit].
+  /// Called by the framework before [Module.binds] and [Module.onInit].
   void configure(T args);
 }

@@ -3,8 +3,8 @@ import 'package:modularity_core/modularity_core.dart';
 
 import '../retention/module_retainer.dart';
 
-/// Корневой виджет фреймворка.
-/// Хранит глобальный реестр активных модулей и конфигурацию DI.
+/// Root widget for the framework.
+/// Holds the global registry of active modules and DI configuration.
 class ModularityRoot extends InheritedWidget {
   /// Create the root inherited widget that provides DI configuration and a
   /// shared [ModuleRetainer] to the widget subtree.

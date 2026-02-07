@@ -2,29 +2,29 @@ import 'dart:async';
 import 'binder.dart';
 import 'configurable.dart';
 
-/// Статусы жизненного цикла модуля
+/// Lifecycle statuses of a module.
 enum ModuleStatus {
-  /// Модуль только создан, ничего не происходит
+  /// Module has just been created, nothing has happened yet.
   initial,
 
-  /// Модуль в процессе инициализации (выполняется onInit)
+  /// Module is currently initializing (onInit is running).
   loading,
 
-  /// Модуль успешно инициализирован и готов к работе
+  /// Module has been successfully initialized and is ready to use.
   loaded,
 
-  /// Произошла ошибка при инициализации
+  /// An error occurred during initialization.
   error,
 
-  /// Модуль уничтожен
+  /// Module has been disposed.
   disposed,
 }
 
-/// Базовый контракт Модуля.
-/// Модуль - это единица логики, имеющая свой жизненный цикл и зависимости.
+/// Base contract for a Module.
+/// A module is a unit of logic with its own lifecycle and dependencies.
 abstract class Module {
-  /// Список модулей, от которых зависит этот модуль.
-  /// Они будут инициализированы ДО старта этого модуля.
+  /// List of modules this module depends on.
+  /// They will be initialized BEFORE this module starts.
   List<Module> get imports => [];
 
   /// List of structural sub-features that compose this module.
@@ -33,31 +33,32 @@ abstract class Module {
   /// instead of constructor arguments, allowing for clean static instantiation.
   List<Module> get submodules => [];
 
-  /// Список типов, которые ОБЯЗАН предоставить родительский скоуп.
-  /// Проверяется при старте. Если типа нет — инициализация падает с ошибкой.
+  /// List of types that the parent scope MUST provide.
+  /// Checked at startup. If a type is missing, initialization fails with an error.
   List<Type> get expects => [];
 
-  /// Регистрация зависимостей, доступных ТОЛЬКО внутри этого модуля (Private).
-  /// Здесь объявляются реализации репозиториев, data sources, мапперы и прочие
-  /// детали. Эти зависимости не покидают границы модуля и не видны импортёрам.
+  /// Registers dependencies available ONLY within this module (Private).
+  /// Declare repository implementations, data sources, mappers, and other
+  /// internal details here. These dependencies do not leave the module boundary
+  /// and are not visible to importers.
   void binds(Binder i);
 
-  /// Регистрация зависимостей, которые этот модуль предоставляет внешнему миру (Public).
-  /// Эти зависимости будут доступны тем модулям, которые импортируют текущий.
-  /// В этом методе следует экспортировать только публичные интерфейсы/фасады,
-  /// опираясь на ранее зарегистрированные приватные зависимости.
+  /// Registers dependencies that this module exposes to the outside world (Public).
+  /// These dependencies will be available to modules that import this one.
+  /// Only public interfaces/facades should be exported here,
+  /// relying on previously registered private dependencies.
   void exports(Binder i) {}
 
-  /// Асинхронная инициализация.
-  /// Вызывается после того, как все [imports] перешли в статус [ModuleStatus.loaded],
-  /// и после выполнения [binds] и [exports].
+  /// Asynchronous initialization.
+  /// Called after all [imports] have reached [ModuleStatus.loaded] status,
+  /// and after [binds] and [exports] have been executed.
   Future<void> onInit() async {}
 
-  /// Освобождение ресурсов.
-  /// Вызывается при уничтожении модуля.
+  /// Resource cleanup.
+  /// Called when the module is being disposed.
   void onDispose() {}
 
-  /// Хук для Hot Reload.
-  /// Позволяет обновить фабрики без потери состояния синглтонов.
+  /// Hook for Hot Reload.
+  /// Allows updating factories without losing singleton state.
   void hotReload(Binder i) {}
 }

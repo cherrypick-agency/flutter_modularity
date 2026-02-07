@@ -9,8 +9,8 @@ class _Registration {
   Object? instance;
 }
 
-/// Простая реализация Binder на основе Map.
-/// Поддерживает разделение на Public (Exports) и Private (Binds) зависимости.
+/// Simple Map-based Binder implementation.
+/// Supports separation into Public (Exports) and Private (Binds) dependencies.
 class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
   /// Create a [SimpleBinder] with optional imported [Binder] list and parent scope.
   SimpleBinder({List<Binder> imports = const [], Binder? parent})
@@ -19,17 +19,17 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
   final Map<Type, _Registration> _privateRegistrations = {};
   final Map<Type, _Registration> _publicRegistrations = {};
 
-  /// Список импортированных модулей (их публичные биндеры).
+  /// List of imported modules (their public binders).
   final List<Binder> _imports;
 
-  /// Родительский биндер (Scope chaining).
+  /// Parent binder (Scope chaining).
   final Binder? _parent;
 
-  /// Если true, регистрация идет в _publicRegistrations.
+  /// When true, registrations go to _publicRegistrations.
   bool _isExportMode = false;
 
-  /// После завершения exports публичный скоуп может быть «заморожен» для защиты
-  /// от пост-регистраций. Hot reload может сбросить этот флаг.
+  /// After exports complete the public scope may be sealed to prevent
+  /// post-registration. Hot reload can reset this flag.
   bool _publicSealed = false;
 
   final List<RegistrationStrategy> _strategyStack = [
@@ -42,11 +42,11 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
     _imports.addAll(binders);
   }
 
-  /// Включает режим экспорта (регистрация в публичный скоуп).
+  /// Enable export mode (registrations go to the public scope).
   @override
   void enableExportMode() => _isExportMode = true;
 
-  /// Выключает режим экспорта (регистрация в приватный скоуп).
+  /// Disable export mode (registrations go to the private scope).
   @override
   void disableExportMode() => _isExportMode = false;
 
@@ -183,7 +183,7 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
     }
 
     // 3. Search in Parent (Implicit scope chaining)
-    // Ищем в родителе как обычный get (он сам решит свои права доступа)
+    // Search parent as a regular get (it decides its own access rights)
     final parentFound = _parent?.tryGet<T>();
     if (parentFound != null) return parentFound;
 
@@ -237,7 +237,7 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
     return false;
   }
 
-  /// Ищет ТОЛЬКО в публичных зависимостях (для использования другими модулями).
+  /// Searches ONLY in public dependencies (for use by other modules).
   @override
   T? tryGetPublic<T extends Object>() {
     if (_publicRegistrations.containsKey(T)) {
@@ -266,7 +266,7 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
     return reg.factory() as T;
   }
 
-  /// Очистка ресурсов.
+  /// Release resources.
   void dispose() {
     _privateRegistrations.clear();
     _publicRegistrations.clear();
@@ -289,7 +289,7 @@ class SimpleBinder implements ExportableBinder, RegistrationAwareBinder {
     }
   }
 
-  /// Простая текстовая диагностика текущего состояния биндеров.
+  /// Simple text diagnostics of the current binder state.
   String debugGraph({bool includeImports = false}) {
     final buffer = StringBuffer()
       ..writeln('SimpleBinder(${hashCode.toRadixString(16)})')

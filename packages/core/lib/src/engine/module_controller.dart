@@ -38,7 +38,7 @@ class ModuleController {
 
   /// The [Binder] that holds all dependency registrations for [module].
   final Binder binder;
-  final BinderFactory _binderFactory; // Храним для создания импортов
+  final BinderFactory _binderFactory;
   final StreamController<ModuleStatus> _statusController;
 
   /// Optional callback applied to the [Binder] after binds/exports to override
@@ -51,7 +51,7 @@ class ModuleController {
   /// Ordered list of [ModuleInterceptor]s notified at each lifecycle event.
   final List<ModuleInterceptor> interceptors;
 
-  /// Ссылка на контроллеры импортируемых модулей.
+  /// References to the controllers of imported modules.
   final List<ModuleController> importedControllers = [];
 
   /// Broadcast stream of [ModuleStatus] transitions.
@@ -72,7 +72,7 @@ class ModuleController {
   /// `null` if no error occurred.
   Object? get lastError => _lastError;
 
-  /// Конфигурация модуля.
+  /// Configure the module.
   void configure(dynamic args) {
     if (module is Configurable) {
       try {
@@ -90,7 +90,7 @@ class ModuleController {
     }
   }
 
-  /// Запуск цикла инициализации.
+  /// Start the initialization lifecycle.
   Future<void> initialize(
     Map<ModuleRegistryKey, ModuleController> globalModuleRegistry, {
     Set<Type>? resolutionStack,
@@ -127,9 +127,9 @@ class ModuleController {
 
       // 3. Validate Expects (Fail-Fast)
       for (final expectedType in module.expects) {
-        // contains проверяет всю цепочку (Local + Imports + Parent)
-        // Но на этом этапе Local пуст (binds еще не вызван).
-        // Значит, мы проверяем Imports и Parent.
+        // contains checks the entire chain (Local + Imports + Parent).
+        // At this stage Local is empty (binds hasn't been called yet),
+        // so we're effectively checking Imports and Parent.
         if (!binder.contains(expectedType)) {
           throw ModuleConfigurationException(
             "Module ${module.runtimeType} expects dependency of type '$expectedType', "
@@ -180,11 +180,9 @@ class ModuleController {
   void hotReload() {
     if (_currentStatus != ModuleStatus.loaded) return;
 
-    // Перезапускаем binds, чтобы обновить фабрики.
-    // Синглтоны в SimpleBinder сохранятся, если мы просто перезапишем поверх?
-    // Нет, SimpleBinder перезапишет регистрацию и потеряет инстанс.
-    // Для MVP мы просто вызываем хук и перезаписываем.
-    // В будущем SimpleBinder должен поддерживать "updateFactoryOnly".
+    // Re-run binds to update factories.
+    // For MVP we simply call the hook and overwrite registrations.
+    // In the future SimpleBinder should support "updateFactoryOnly".
 
     void rebind() {
       final exportable = binder is ExportableBinder
@@ -209,7 +207,7 @@ class ModuleController {
       rebind();
     }
 
-    // Хук пользователя
+    // User hook
     module.hotReload(binder);
   }
 

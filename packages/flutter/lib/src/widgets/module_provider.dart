@@ -23,8 +23,8 @@ class ModuleProvider extends InheritedWidget {
     return controller != oldWidget.controller;
   }
 
-  /// Получает [Binder] из ближайшего модуля.
-  /// Используется для получения зависимостей вручную:
+  /// Retrieves the [Binder] from the nearest module.
+  /// Used to obtain dependencies manually:
   /// `ModuleProvider.of(context).get<Service>()`
   /// `ModuleProvider.of(context).parent<Service>()`
   static Binder of(BuildContext context, {bool listen = true}) {
@@ -40,7 +40,7 @@ class ModuleProvider extends InheritedWidget {
     return provider.controller.binder;
   }
 
-  /// Получает сам модуль типа [M] из контекста.
+  /// Retrieves the module of type [M] from the context.
   static M moduleOf<M extends Module>(
     BuildContext context, {
     bool listen = true,

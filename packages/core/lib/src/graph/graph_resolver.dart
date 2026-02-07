@@ -4,11 +4,11 @@ import '../engine/module_controller.dart';
 import '../engine/module_override_scope.dart';
 import 'module_registry_key.dart';
 
-/// Сервис для разрешения зависимостей модуля (Imports).
-/// Отвечает за поиск, создание и инициализацию импортируемых модулей.
+/// Service for resolving module dependencies (Imports).
+/// Responsible for finding, creating, and initializing imported modules.
 class GraphResolver {
-  /// Рекурсивно разрешает и инициализирует импорты.
-  /// Возвращает список контроллеров зависимостей.
+  /// Recursively resolves and initializes imports.
+  /// Returns a list of dependency controllers.
   Future<List<ModuleController>> resolveAndInitImports(
     Module module,
     Map<ModuleRegistryKey, ModuleController> registry,
@@ -19,7 +19,7 @@ class GraphResolver {
   }) async {
     final currentStack = resolutionStack ?? {module.runtimeType};
 
-    // 1. Подготавливаем все задачи (Futures), но запускаем их "параллельно"
+    // 1. Prepare all tasks (Futures) and launch them concurrently
     final futures = module.imports.map((importModule) async {
       final type = importModule.runtimeType;
 
@@ -32,9 +32,9 @@ class GraphResolver {
       }
 
       // --- CRITICAL SECTION START (Synchronous) ---
-      // Важно: Получение или создание контроллера должно быть атомарным,
-      // чтобы параллельные ветки не создали дубликатов.
-      // В Dart этот блок не прервется, пока нет await.
+      // Important: Getting or creating the controller must be atomic
+      // so that concurrent branches don't create duplicates.
+      // In Dart this block won't be preempted as long as there's no await.
       final childScope = overrideScope?.childFor(type);
       final registryKey = ModuleRegistryKey(
         moduleType: type,
@@ -53,23 +53,23 @@ class GraphResolver {
       }
       // --- CRITICAL SECTION END ---
 
-      // Ветка A и Ветка B получают свои КОПИИ стека.
-      // Это позволяет безопасно проверять циклы в параллельных ветках.
+      // Branch A and Branch B each get their own copy of the stack.
+      // This allows safe cycle detection across concurrent branches.
       final newStack = {...currentStack, type};
 
-      // Теперь безопасно вызываем await (yield execution)
+      // Now it's safe to await (yield execution)
       if (controller.currentStatus == ModuleStatus.initial) {
         await controller.initialize(registry, resolutionStack: newStack);
       } else if (controller.currentStatus == ModuleStatus.loading) {
-        // Если модуль уже грузится (его пнула другая ветка), просто ждем.
-        // Проверяем на цикл именно в ЭТОЙ ветке
+        // If the module is already loading (triggered by another branch), just wait.
+        // Check for cycles in THIS branch
         if (currentStack.contains(type)) {
           throw CircularDependencyException(
             'Circular dependency detected (during loading): ${currentStack.join(' -> ')} -> $type',
             dependencyChain: [...currentStack, type],
           );
         }
-        // "Smart Wait": Ждем пока другая ветка закончит работу
+        // Smart Wait: Wait until the other branch finishes
         await controller.status.firstWhere((s) => s == ModuleStatus.loaded);
       } else if (controller.currentStatus == ModuleStatus.error) {
         throw ModuleLifecycleException(
@@ -82,7 +82,7 @@ class GraphResolver {
       return controller;
     });
 
-    // 2. Ждем выполнения всех веток одновременно
+    // 2. Await all branches concurrently
     final resolvedControllers = await Future.wait(futures);
 
     return resolvedControllers;
